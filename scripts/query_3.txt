@@ -1,0 +1,177 @@
+*************
+* 3 запрос: *
+*************
+Получить список всех фирм.
+Для каждой фирмы должны быть указаны: название фирмы, страна, где находится её офис.
+Отсортировать список следующим образом: название фирмы, страна.
+Ограничение на максимальное время выполнения запроса:
+? в приложении – 4 мс;
+? используя explain analyze – 2 мс.
+-------------------------------------------------------------------------------------
+
+(1 вариант)
+select companies.name, countries.name
+from companies
+join countries on companies.country_id = countries.id
+order by companies.name, countries.name
+
+"Sort  (cost=67.03..68.53 rows=598 width=31) (actual time=8.302..9.429 rows=598 loops=1)"
+"  Sort Key: companies.name, countries.name"
+"  Sort Method: quicksort  Memory: 77kB"
+"  ->  Hash Join  (cost=3.25..39.45 rows=598 width=31) (actual time=0.550..5.086 rows=598 loops=1)"
+"        Hash Cond: (companies.country_id = countries.id)"
+"        ->  Seq Scan on companies  (cost=0.00..27.98 rows=598 width=20) (actual time=0.034..1.530 rows=598 loops=1)"
+"        ->  Hash  (cost=2.00..2.00 rows=100 width=19) (actual time=0.476..0.476 rows=100 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 6kB"
+"              ->  Seq Scan on countries  (cost=0.00..2.00 rows=100 width=19) (actual time=0.009..0.232 rows=100 loops=1)"
+"Total runtime: 10.731 ms"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(2 вариант)
+
+Добавим индекс в countries:
+
+create INDEX fki_countries_id
+   ON countries(id);
+   
+   
+"Sort  (cost=67.03..68.53 rows=598 width=31) (actual time=7.473..8.584 rows=598 loops=1)"
+"  Sort Key: companies.name, countries.name"
+"  Sort Method: quicksort  Memory: 77kB"
+"  ->  Hash Join  (cost=3.25..39.45 rows=598 width=31) (actual time=0.493..4.373 rows=598 loops=1)"
+"        Hash Cond: (companies.country_id = countries.id)"
+"        ->  Seq Scan on companies  (cost=0.00..27.98 rows=598 width=20) (actual time=0.014..1.311 rows=598 loops=1)"
+"        ->  Hash  (cost=2.00..2.00 rows=100 width=19) (actual time=0.457..0.457 rows=100 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 6kB"
+"              ->  Seq Scan on countries  (cost=0.00..2.00 rows=100 width=19) (actual time=0.007..0.216 rows=100 loops=1)"
+"Total runtime: 9.691 ms"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(3 вариант)
+
+Выполним вертикальное разбиение, отсортировав по имени:
+
+  drop table if exists companies_1part;
+CREATE TABLE companies_1part
+  AS (SELECT id, name, country_id FROM companies order by name);
+drop table if exists companies_2part;
+CREATE TABLE  companies_2part
+  AS (SELECT id, head_full_name, phone, address, bank_details FROM companies);
+
+Добавим ключи:
+
+create INDEX fki_companies_1part_id
+ON companies_1part(id);
+ALTER TABLE companies_1part
+ADD FOREIGN KEY (country_id)
+REFERENCES countries(id);
+ALTER TABLE companies_1part
+ADD PRImary KEY (id)
+
+Запрос:
+select companies_1part.name, countries.name
+from companies_1part
+join countries on companies_1part.country_id = countries.id
+order by companies_1part.name, countries.name
+
+
+"Sort  (cost=50.03..51.53 rows=598 width=31) (actual time=6.096..7.214 rows=598 loops=1)"
+"  Sort Key: companies_1part.name, countries.name"
+"  Sort Method: quicksort  Memory: 77kB"
+"  ->  Hash Join  (cost=3.25..22.45 rows=598 width=31) (actual time=0.518..4.345 rows=598 loops=1)"
+"        Hash Cond: (companies_1part.country_id = countries.id)"
+"        ->  Seq Scan on companies_1part  (cost=0.00..10.98 rows=598 width=20) (actual time=0.012..1.237 rows=598 loops=1)"
+"        ->  Hash  (cost=2.00..2.00 rows=100 width=19) (actual time=0.466..0.466 rows=100 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 6kB"
+"              ->  Seq Scan on countries  (cost=0.00..2.00 rows=100 width=19) (actual time=0.007..0.220 rows=100 loops=1)"
+"Total runtime: 8.382 ms"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(4 вариант)
+
+В таблицу "companies_1part" вместо country_id вставим названия стран из "countries.name"
+Отсортируем по имени компании. Таким образом будем иметь таблицу, из которой достаточно выбрать все данные - готовый запрос.
+Только так мы получим необходимое время выполнения.
+Так как имена стран изменяются редко и новые страны появляются редко, а кроме того, компании заносятся также нечасто, эта избыточность оправдана.
+
+Структура:
+CREATE TABLE companies_1part
+  AS 
+  (SELECT companies.id, companies.name, countries.name as country_name, country_id
+   FROM companies,countries
+   where countries.id = companies.country_id 
+   order by companies.name, countries.name);
+   
+   
+Запрос:
+SELECT companies_1part.name, companies_1part.country_name
+   FROM companies_1part;   
+   
+   
+"Seq Scan on companies_1part  (cost=0.00..11.98 rows=598 width=33) (actual time=0.021..1.280 rows=598 loops=1)"
+"Total runtime: 2.433 ms"
+
+
+
+Все теперь ОКОКОКОКОКОКОК
+   
+ 
+
+
+
+

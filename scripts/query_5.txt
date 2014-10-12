@@ -1,0 +1,101 @@
+*************
+* 4 запрос: *
+*************
+Получить список всех покупателей.
+Для каждого покупателя отобразить ФИО, дату рождения и общую сумму денег, потраченных им за всё время на все покупки, оплаченные наличными деньгами
+(тех покупателей, которые не совершили ни одной такой покупки, включить в начало списка).
+Отсортировать список по убыванию общей суммы.
+Ограничение на максимальное время выполнения запроса:
+? в приложении – 450 мс;
+? используя explain analyze – 230 мс.
+-------------------------------------------------------------------------------------
+
+(1 вариант)
+
+create INDEX fki_clients_id
+ON clients(id);
+
+SELECT clients.surname, clients.name, clients.patronymic, clients.birthdate, sale_amount
+FROM clients
+left JOIN
+	(select orders.client_id, sum(orders.sale_amount) as sale_amount
+	from orders
+	group by orders.client_id) as orders_client_sale_amount
+ON orders_client_sale_amount.client_id = clients.id
+order by sale_amount desc
+
+"Sort  (cost=112156.71..112281.71 rows=50000 width=84) (actual time=4485.912..4589.698 rows=50000 loops=1)"
+"  Sort Key: (sum(orders.sale_amount))"
+"  Sort Method: external merge  Disk: 3528kB"
+"  ->  Merge Right Join  (cost=97703.21..105860.30 rows=50000 width=84) (actual time=2181.968..4262.899 rows=50000 loops=1)"
+"        Merge Cond: (orders.client_id = clients.id)"
+"        ->  GroupAggregate  (cost=97702.92..101923.41 rows=47049 width=9) (actual time=2181.898..3924.463 rows=49998 loops=1)"
+"              ->  Sort  (cost=97702.92..98952.92 rows=500000 width=9) (actual time=2181.825..2975.139 rows=500000 loops=1)"
+"                    Sort Key: orders.client_id"
+"                    Sort Method: external merge  Disk: 9456kB"
+"                    ->  Seq Scan on orders  (cost=0.00..33280.00 rows=500000 width=9) (actual time=0.232..1001.723 rows=500000 loops=1)"
+"        ->  Index Scan using fki_clients_id on clients  (cost=0.29..2753.29 rows=50000 width=56) (actual time=0.053..108.052 rows=50000 loops=1)"
+"Total runtime: 4655.662 ms"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(2 вариант)
+ 
+Добавить столбец "суммарные покупки" в таблицу Clients.
+
+Запрос:
+
+SELECT clients.surname, clients.name, clients.patronymic, clients.birthdate, sum_sale_amount
+FROM clients
+order by sum_sale_amount desc
+
+
+
+"Sort  (cost=9025.91..9150.91 rows=50000 width=56) (actual time=288.433..368.294 rows=50000 loops=1)"
+"  Sort Key: sum_sale_amount"
+"  Sort Method: external merge  Disk: 3376kB"
+"  ->  Seq Scan on clients  (cost=0.00..3412.00 rows=50000 width=56) (actual time=0.015..124.808 rows=50000 loops=1)"
+"Total runtime: 432.735 ms"
+
+
+
+
+
+
+
+
+
+
+
+
+(3 вариант)
+
+сделаем таблицу уже отсортированной по умолчанию:
+
+create table sorted_clients
+as (SELECT *
+FROM clients
+order by sum_sale_amount desc)
+
+Запрос:
+SELECT surname, name, patronymic, birthdate, sum_sale_amount
+FROM sorted_clients
+
+Время:
+"Seq Scan on sorted_clients  (cost=0.00..1971.00 rows=50000 width=56) (actual time=0.012..120.609 rows=50000 loops=1)"
+"Total runtime: 210.337 ms"
+
+
+Все теперь ОКОКОКОКОКОКОК

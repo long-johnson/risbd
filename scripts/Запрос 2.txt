@@ -1,0 +1,522 @@
+set search_path to server_a;
+
+analyze orders;
+analyze goods; 
+analyze companies;
+analyze categories;
+analyze clients;
+analyze countries;
+analyze payment_methods;
+analyze sale_types;
+
+explain analyze
+select on_sale_date, cat.title, com.name, gd.model, ord.sale_amount, st.title sale_type
+from orders ord, goods gd, companies com, categories cat, sale_types st, payment_methods pm
+where ord.sale_amount >= 1000
+	and date_part('month', on_sale_date) = 1
+	and ord.goods_id = gd.id and gd.company_id = com.id and gd.category_id = cat.id and pm.id = ord.payment_method_id and ord.sale_type_id = st.id
+	and pm.title = 'Наличный'
+order by ord.on_sale_date, cat.title, com.name, gd.model;
+
+"Sort  (cost=28879.98..28882.11 rows=852 width=76) (actual time=796.427..833.824 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..28838.51 rows=852 width=76) (actual time=100.519..713.078 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..28825.75 rows=852 width=63) (actual time=100.402..668.562 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..28803.57 rows=852 width=39) (actual time=98.797..622.222 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..28756.40 rows=852 width=27) (actual time=95.717..574.404 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Nested Loop  (cost=0.00..27588.34 rows=852 width=17) (actual time=40.094..461.869 rows=14495 loops=1)"
+"                                Join Filter: (ord.payment_method_id = pm.id)"
+"                                Rows Removed by Join Filter: 14356"
+"                                ->  Seq Scan on payment_methods pm  (cost=0.00..1.02 rows=1 width=4) (actual time=0.047..0.049 rows=1 loops=1)"
+"                                      Filter: (title = 'Наличный'::text)"
+"                                      Rows Removed by Filter: 1"
+"                                ->  Seq Scan on orders ord  (cost=0.00..27566.00 rows=1705 width=21) (actual time=39.921..396.659 rows=28851 loops=1)"
+"                                      Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                      Rows Removed by Filter: 471149"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=55.566..55.566 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.385..30.505 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=3.049..3.049 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.022..1.571 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.576..1.576 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.027..0.781 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.083..0.083 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.062..0.067 rows=2 loops=1)"
+"Total runtime: 852.335 ms"
+
+Среднее время: (928,057 + 852,335 + 859,098 + 907,535 + 874,550) / 5 = 884,315
+
+Разделим таблицу orders на две части. На сервере А будет храниться информация только о продажах за наличные. 
+
+delete
+from orders 
+where payment_method_id = (select id
+			   from payment_methods
+			   where title = 'Безналичный');			  
+
+Запрос успешно выполнен: 250067 строк изменено за 1883 мс.
+
+Перепишем запрос.
+
+explain analyze
+select on_sale_date, cat.title, com.name, gd.model, ord.sale_amount, st.title sale_type
+from orders ord, goods gd, companies com, categories cat, sale_types st
+where ord.sale_amount >= 1000
+	and date_part('month', on_sale_date) = 1
+	and ord.goods_id = gd.id and gd.company_id = com.id and gd.category_id = cat.id and ord.sale_type_id = st.id
+order by ord.on_sale_date, cat.title, com.name, gd.model;
+
+"Sort  (cost=24107.03..24109.25 rows=889 width=76) (actual time=560.699..598.851 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..24063.48 rows=889 width=76) (actual time=83.411..478.270 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..24050.22 rows=889 width=63) (actual time=83.359..431.353 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..24027.52 rows=889 width=39) (actual time=81.826..383.903 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23979.84 rows=889 width=27) (actual time=78.993..334.091 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..22810.86 rows=889 width=17) (actual time=29.436..225.506 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.518..49.518 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.092..25.138 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.816..2.816 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.008..1.371 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.516..1.516 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.008..0.728 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.033..0.033 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.015..0.021 rows=2 loops=1)"
+"Total runtime: 616.885 ms"
+
+Среднее время: (760,653 + 681,863 + 616,885 + 683,351 + 682,871) / 5 = 685,1246
+
+Внесем изменения в базу данных, обеспечивающие целостность
+
+alter table orders add primary key (id);
+alter table goods add primary key (id);
+alter table categories add primary key (id);
+alter table sale_types add primary key (id);
+alter table companies add primary key (id);
+alter table clients add primary key (id);
+alter table countries add primary key (id);
+alter table payment_methods add primary key (id);
+
+Проверим, что хуже не стало: Среднее за 5 запусков ~684,2
+
+Продолжим вносить ограничения целостности
+
+alter table orders
+  add constraint orders_goods_id
+    foreign key (goods_id) references goods (id);
+	
+alter table orders
+  add constraint orders_client_id
+    foreign key (client_id) references clients (id);
+	
+alter table orders
+  add constraint orders_payment_method_id
+    foreign key (payment_method_id) references payment_methods (id);
+	
+alter table orders
+  add constraint orders_sale_types_id
+    foreign key (sale_type_id) references sale_types (id);
+
+alter table goods
+  add constraint goods_companies_id
+    foreign key (company_id) references companies (id);
+	
+alter table goods
+  add constraint goods_category_id
+    foreign key (category_id) references categories (id);
+	
+alter table companies
+  add constraint companies_country_id
+    foreign key (country_id) references countries (id);
+	
+Проверим, что хуже не стало: Среднее за 5 запусков ~659. Даже лучше чуть-чуть. (Ну или сестра из инета вышла)
+
+Добавим индексы на внешние ключи, которые используются в данном запросе	
+	
+create index fki_orders_goods_id on orders (goods_id);
+create index fki_orders_sale_types_id on orders (sale_type_id);
+create index fki_goods_companies_id on goods (company_id);
+create index fki_goods_categories_id on goods (category_id);
+
+"Sort  (cost=23855.45..23857.56 rows=845 width=76) (actual time=575.746..614.039 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..23814.37 rows=845 width=76) (actual time=82.285..492.380 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..23801.71 rows=845 width=63) (actual time=82.237..445.435 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..23779.62 rows=845 width=39) (actual time=80.649..398.450 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23732.54 rows=845 width=27) (actual time=77.746..350.055 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..22564.66 rows=845 width=17) (actual time=27.859..239.943 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.711..49.711 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.083..25.153 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.884..2.884 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.006..1.391 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.572..1.572 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.761 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.026..0.026 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.011 rows=2 loops=1)"
+"Total runtime: 632.554 ms"
+
+Среднее время: (632,554 + 663,379 + 665,592 + 653,929 + 639,489) / 5 = 650,9886
+
+Немножко быстрее. Все джойны, кроме с типом продаж, примерно 50ms
+
+create index on goods (id);
+create index on categories (id);
+create index on companies (id);
+create index on sale_types (id);
+
+"Sort  (cost=23855.20..23857.31 rows=843 width=76) (actual time=589.944..627.665 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..23814.24 rows=843 width=76) (actual time=90.137..508.223 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..23801.60 rows=843 width=63) (actual time=90.094..464.216 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..23779.54 rows=843 width=39) (actual time=88.599..419.440 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23732.49 rows=843 width=27) (actual time=85.815..372.094 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..22564.66 rows=843 width=17) (actual time=36.417..265.106 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.330..49.330 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.083..24.812 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.765..2.765 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.006..1.362 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.481..1.481 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.708 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.024..0.024 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.011 rows=2 loops=1)"
+"Total runtime: 646.118 ms"
+
+Среднее время: (667,192 + 646,118 + 692,964 + 682,526 + 660,930) / 5 = 669,946
+
+Стало хуже, хотя не значительно. Мб проблема не из-за индексов. Но вероятно их все равно нужно будет удалить, т.к. лучше точно не стало.
+
+create index on orders (sale_amount);
+
+"Sort  (cost=23855.20..23857.31 rows=843 width=76) (actual time=588.385..626.560 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..23814.24 rows=843 width=76) (actual time=79.990..504.189 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..23801.60 rows=843 width=63) (actual time=79.948..455.671 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..23779.54 rows=843 width=39) (actual time=78.411..406.052 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23732.49 rows=843 width=27) (actual time=75.556..354.994 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..22564.66 rows=843 width=17) (actual time=25.421..242.086 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.954..49.954 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.083..25.243 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.838..2.838 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.007..1.396 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.520..1.520 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.731 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.024..0.024 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.012 rows=2 loops=1)"
+"Total runtime: 645.431 ms"
+
+Среднее время: (649,994 + 684,074 + 642,243 + 646,175 + 645,431) / 5 = 653,5834
+
+Особо ничего не поменялось. Возможно этот индекс тоже сильно и не нужен
+
+create index on orders (on_sale_date);
+
+"Sort  (cost=23854.84..23856.94 rows=840 width=76) (actual time=584.291..622.480 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1184kB"
+"  ->  Hash Join  (cost=1193.73..23814.04 rows=840 width=76) (actual time=83.008..500.733 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..23801.44 rows=840 width=63) (actual time=82.965..453.461 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..23779.42 rows=840 width=39) (actual time=81.423..403.660 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23732.42 rows=840 width=27) (actual time=78.556..355.140 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..22564.66 rows=840 width=17) (actual time=28.604..244.683 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (date_part('month'::text, (on_sale_date)::timestamp without time zone) = 1::double precision))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.912..49.912 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.084..25.314 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.849..2.849 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.006..1.383 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.526..1.526 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.715 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.025..0.025 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.012 rows=2 loops=1)"
+"Total runtime: 641.212 ms"
+
+Среднее время: (666,844 + 641,212 + 650,827 + 662,224 + 677,00) / 5 = 659,6214
+
+Даже хуже стало.
+Уберем этот индекс и добавим доп столбец для месяца.
+
+alter table orders add column on_sale_month integer;
+
+update orders 
+  set on_sale_month = date_part('month', on_sale_date);
+  
+Перепишем запрос
+
+explain analyze
+select on_sale_date, cat.title, com.name, gd.model, ord.sale_amount, st.title sale_type
+from orders ord, goods gd, companies com, categories cat, sale_types st
+where ord.sale_amount >= 1000
+	and on_sale_month = 1
+	and ord.goods_id = gd.id and gd.company_id = com.id and gd.category_id = cat.id and ord.sale_type_id = st.id
+order by ord.on_sale_date, cat.title, com.name, gd.model;
+
+"Sort  (cost=25652.13..25691.58 rows=15781 width=76) (actual time=492.064..530.650 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1192kB"
+"  ->  Hash Join  (cost=1193.73..23848.23 rows=15781 width=76) (actual time=56.202..410.445 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1192.68..23630.19 rows=15781 width=63) (actual time=56.161..365.014 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1182.21..23402.74 rows=15781 width=39) (actual time=54.633..318.437 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1146.76..23150.29 rows=15781 width=27) (actual time=51.456..270.061 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Seq Scan on orders ord  (cost=0.00..21609.01 rows=15781 width=17) (actual time=0.047..162.867 rows=14495 loops=1)"
+"                                Filter: ((sale_amount >= 1000::numeric) AND (on_sale_month = 1))"
+"                                Rows Removed by Filter: 235438"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=51.383..51.383 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.082..25.137 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=3.160..3.160 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.007..1.341 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.512..1.512 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.723 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.023..0.023 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.013 rows=2 loops=1)"
+"Total runtime: 548.978 ms"
+
+Среднее время: (581,515 + 580,872 + 580,614 + 592,057 + 548,978) / 5 = 576,8072
+
+К успеху! Время для фильтрации строк сократилось на 80!!!
+
+create index on orders (on_sale_month);
+
+"Sort  (cost=23076.40..23113.20 rows=14720 width=76) (actual time=389.278..439.209 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1192kB"
+"  ->  Hash Join  (cost=1605.79..21402.87 rows=14720 width=76) (actual time=61.059..308.336 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1604.74..21199.42 rows=14720 width=63) (actual time=61.017..259.566 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1594.27..20986.55 rows=14720 width=39) (actual time=59.475..210.416 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1558.82..20748.70 rows=14720 width=27) (actual time=56.168..159.493 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Bitmap Heap Scan on orders ord  (cost=412.06..19233.94 rows=14720 width=17) (actual time=6.253..57.013 rows=14495 loops=1)"
+"                                Recheck Cond: (on_sale_month = 1)"
+"                                Filter: (sale_amount >= 1000::numeric)"
+"                                Rows Removed by Filter: 6929"
+"                                ->  Bitmap Index Scan on orders_on_sale_month_idx  (cost=0.00..408.38 rows=21861 width=0) (actual time=3.847..3.847 rows=21424 loops=1)"
+"                                      Index Cond: (on_sale_month = 1)"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=49.888..49.888 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.084..25.412 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=3.286..3.286 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.008..1.419 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.525..1.525 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.725 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.024..0.024 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.011 rows=2 loops=1)"
+"Total runtime: 463.086 ms"
+
+Среднее время: (464,524 + 496,869 + 477,869 + 463,086 + 467,424) / 5 = 473,9544
+
+Сократили время ещё на 100mc!
+
+Самый большой джойн с продуктами - ~100, 
+остальные по ~50,
+сортировка ~130
+
+Если проиндексировать поля, по которым ведется сортировка
+
+//create index on orders (on_sale_month); уже есть индекс этот
+create index on categories (title);
+create index on companies (name);
+create index on goods (model);
+
+"Sort  (cost=22798.42..22832.80 rows=13753 width=76) (actual time=380.991..419.024 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, com.name, gd.model"
+"  Sort Method: external merge  Disk: 1192kB"
+"  ->  Hash Join  (cost=1579.36..21240.58 rows=13753 width=76) (actual time=59.755..300.405 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=1578.31..21050.43 rows=13753 width=63) (actual time=59.714..253.948 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=1567.84..20850.85 rows=13753 width=39) (actual time=58.166..205.534 rows=14495 loops=1)"
+"                    Hash Cond: (gd.company_id = com.id)"
+"                    ->  Hash Join  (cost=1532.39..20626.29 rows=13753 width=27) (actual time=55.275..156.950 rows=14495 loops=1)"
+"                          Hash Cond: (ord.goods_id = gd.id)"
+"                          ->  Bitmap Heap Scan on orders ord  (cost=385.63..19135.71 rows=13753 width=17) (actual time=6.472..56.853 rows=14495 loops=1)"
+"                                Recheck Cond: (on_sale_month = 1)"
+"                                Filter: (sale_amount >= 1000::numeric)"
+"                                Rows Removed by Filter: 6929"
+"                                ->  Bitmap Index Scan on orders_on_sale_month_idx  (cost=0.00..382.19 rows=20503 width=0) (actual time=3.869..3.869 rows=21424 loops=1)"
+"                                      Index Cond: (on_sale_month = 1)"
+"                          ->  Hash  (cost=1019.67..1019.67 rows=10167 width=18) (actual time=48.775..48.775 rows=10167 loops=1)"
+"                                Buckets: 1024  Batches: 1  Memory Usage: 512kB"
+"                                ->  Seq Scan on goods gd  (cost=0.00..1019.67 rows=10167 width=18) (actual time=0.150..24.511 rows=10167 loops=1)"
+"                    ->  Hash  (cost=27.98..27.98 rows=598 width=20) (actual time=2.874..2.874 rows=598 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 32kB"
+"                          ->  Seq Scan on companies com  (cost=0.00..27.98 rows=598 width=20) (actual time=0.007..1.386 rows=598 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.533..1.533 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.008..0.749 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.024..0.024 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.011 rows=2 loops=1)"
+"Total runtime: 437.315 ms"
+
+Среднее время: (437,315 + 470,387 + 450,921 + 446,453 + 455,237) / 5 = 452,0626
+
+Нужно что-то делать с джойнами
+1)"                          Hash Cond: (ord.goods_id = gd.id)"
+100 ms. Разбить никак нельзя. Если объединить таблицы - уж слишком много лишней информации.
+2)"                    Hash Cond: (gd.company_id = com.id)"
+50 ms. Неплохо. Можно к таблице товаров добавить столбец, в котором будет имя компании. 
+3)"              Hash Cond: (gd.category_id = cat.id)"
+50 ms. Неплохо. Можно к таблице товаров добавить столбец, в котором будет название категории.
+4)"        Hash Cond: (ord.sale_type_id = st.id)"
+50 ms. Столбец с полмиллионом записей - точно хуже, чем верхние два варианта
+ 
+select avg(length(name))
+from companies
+ 
+2) 
+14.4 - средная длина названия категории, т.е. 146404,8 - лишних символов, при добавлении столбца
+
+3)
+12.8 - средная длина названия компании, т.е. 130137,6 - лишних символов, при добавлении столбца
+
+в общем, чего присоединять почти без разницы. Пусть будут фирмы
+
+alter table goods add column company_name text;
+
+update goods 
+  set company_name = companies.name
+  from companies
+  where companies.id = company_id
+  
+explain analyze
+select on_sale_date, cat.title, company_name, gd.model, ord.sale_amount, st.title sale_type
+from orders ord, goods gd, categories cat, sale_types st
+where ord.sale_amount >= 1000
+	and on_sale_month = 1
+	and ord.goods_id = gd.id and gd.category_id = cat.id and ord.sale_type_id = st.id
+order by ord.on_sale_date, cat.title, company_name, gd.model;
+
+"Sort  (cost=23619.00..23655.56 rows=14627 width=71) (actual time=337.633..375.084 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, gd.company_name, gd.model"
+"  Sort Method: external merge  Disk: 1192kB"
+"  ->  Hash Join  (cost=2424.56..22005.07 rows=14627 width=71) (actual time=59.388..256.720 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=2423.51..21802.91 rows=14627 width=58) (actual time=59.348..209.867 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=2413.04..21591.32 rows=14627 width=34) (actual time=57.802..162.318 rows=14495 loops=1)"
+"                    Hash Cond: (ord.goods_id = gd.id)"
+"                    ->  Bitmap Heap Scan on orders ord  (cost=406.29..19218.88 rows=14627 width=17) (actual time=6.221..56.573 rows=14495 loops=1)"
+"                          Recheck Cond: (on_sale_month = 1)"
+"                          Filter: (sale_amount >= 1000::numeric)"
+"                          Rows Removed by Filter: 6929"
+"                          ->  Bitmap Index Scan on orders_on_sale_month_idx  (cost=0.00..402.63 rows=21628 width=0) (actual time=3.797..3.797 rows=21424 loops=1)"
+"                                Index Cond: (on_sale_month = 1)"
+"                    ->  Hash  (cost=1879.67..1879.67 rows=10167 width=25) (actual time=51.554..51.554 rows=10167 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 591kB"
+"                          ->  Seq Scan on goods gd  (cost=0.00..1879.67 rows=10167 width=25) (actual time=0.006..26.934 rows=10167 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.530..1.530 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.007..0.753 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.023..0.023 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.007..0.013 rows=2 loops=1)"
+"Total runtime: 393.540 ms"
+
+Среднее время: (417,158 + 417,696 + 417,234 + 400,260 + 393,540) / 5 = 409,1776
+
+create index on orders (company_name);
+
+"Sort  (cost=23632.46..23669.14 rows=14672 width=71) (actual time=325.643..363.844 rows=14495 loops=1)"
+"  Sort Key: ord.on_sale_date, cat.title, gd.company_name, gd.model"
+"  Sort Method: external merge  Disk: 1192kB"
+"  ->  Hash Join  (cost=2425.76..22015.10 rows=14672 width=71) (actual time=62.177..244.171 rows=14495 loops=1)"
+"        Hash Cond: (ord.sale_type_id = st.id)"
+"        ->  Hash Join  (cost=2424.71..21812.31 rows=14672 width=58) (actual time=62.150..200.347 rows=14495 loops=1)"
+"              Hash Cond: (gd.category_id = cat.id)"
+"              ->  Hash Join  (cost=2414.24..21600.10 rows=14672 width=34) (actual time=61.118..157.160 rows=14495 loops=1)"
+"                    Hash Cond: (ord.goods_id = gd.id)"
+"                    ->  Bitmap Heap Scan on orders ord  (cost=407.48..19226.54 rows=14672 width=17) (actual time=4.262..50.918 rows=14495 loops=1)"
+"                          Recheck Cond: (on_sale_month = 1)"
+"                          Filter: (sale_amount >= 1000::numeric)"
+"                          Rows Removed by Filter: 6929"
+"                          ->  Bitmap Index Scan on orders_on_sale_month_idx  (cost=0.00..403.81 rows=21786 width=0) (actual time=2.572..2.572 rows=21424 loops=1)"
+"                                Index Cond: (on_sale_month = 1)"
+"                    ->  Hash  (cost=1879.67..1879.67 rows=10167 width=25) (actual time=56.835..56.835 rows=10167 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 591kB"
+"                          ->  Seq Scan on goods gd  (cost=0.00..1879.67 rows=10167 width=25) (actual time=0.004..32.988 rows=10167 loops=1)"
+"              ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.021..1.021 rows=332 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"                    ->  Seq Scan on categories cat  (cost=0.00..6.32 rows=332 width=32) (actual time=0.005..0.468 rows=332 loops=1)"
+"        ->  Hash  (cost=1.02..1.02 rows=2 width=21) (actual time=0.015..0.015 rows=2 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 1kB"
+"              ->  Seq Scan on sale_types st  (cost=0.00..1.02 rows=2 width=21) (actual time=0.003..0.005 rows=2 loops=1)"
+"Total runtime: 382.231 ms"
+
+Среднее время: (382,231 + 404,561 + 396,336 + 396,184 + 399,836) / 5 = 395,8296
+
+Почти получилось. Спишем это на медленный интернет. Ибо иногда даже попадает.
+
+
+
