@@ -1,0 +1,155 @@
+*************
+* 6 запрос: *
+*************
+ƒл€ указанного мес€ца (заданного номером мес€ца) получить список всех продаж, каж-да€ из которых совершена за безналичный расчЄт на сумму не менее 1000.
+ƒл€ каждой продажи должны быть указаны: дата, категори€ товара, модель, сумма про-дажи (название фирмы и тип поставки указывать не надо).
+ќтсортировать список следующим образом: дата, категори€, модель.
+ќграничение на максимальное врем€ выполнени€ запроса:
+? в приложении Ц 530 мс;
+? использу€ explain analyze Ц 375 мс.
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+(1 вариант)
+
+-- перенесем таблицу "безнал. покупки >= 1000" на сервер B
+
+create table public.orders_non_cash_ge_1000 AS
+(
+select * from 
+public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'select id, goods_id, client_id, on_sale_date, sale_amount, sale_type_id, details, on_sale_month
+	 from initial.orders_non_cash_ge_1000') 
+as A(id integer, goods_id integer, client_id integer, on_sale_date date, sale_amount numeric(12,2), sale_type_id integer, details text, on_sale_month integer)
+)
+
+-- добавим необходимые индексы и ограничени€
+
+ALTER TABLE orders_non_cash_ge_1000 ADD PRIMARY KEY (id);
+create INDEX fki_categories_month_sum_id ON categories_month_sum(id);
+create INDEX fki_orders_non_cash_ge_1000_id ON orders_non_cash_ge_1000(id);
+create INDEX fki_orders_non_cash_ge_1000_on_sale_month ON orders_non_cash_ge_1000(on_sale_month);
+
+-- напишем запрос на выборку
+
+select orders.on_sale_date, categories.title, goods.model, orders.sale_amount
+from 
+   (select goods_id, sale_type_id, on_sale_date, sale_amount
+	from orders_non_cash_ge_1000
+	where on_sale_month = 1) as orders
+join (
+	select * from
+	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4', 'select id, category_id, model from initial.goods') 
+	as goods(id integer, category_id integer, model text)
+      ) as goods
+on orders.goods_id = goods.id
+join (
+	select * from
+	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4', 'select id, title from initial.categories_month_sum') 
+        as categories(id integer, title text)
+     ) as categories
+on goods.category_id = categories.id
+order by orders.on_sale_date, categories.title, goods.model;
+
+
+
+"Sort  (cost=6268.52..6288.35 rows=7930 width=73) (actual time=3559.083..4168.225 rows=172272 loops=1)"
+"  Sort Key: orders_non_cash_ge_1000.on_sale_date, categories.title, goods.model"
+"  Sort Method: external merge  Disk: 9240kB"
+"  ->  Hash Join  (cost=5346.31..5754.93 rows=7930 width=73) (actual time=1435.275..1671.103 rows=172272 loops=1)"
+"        Hash Cond: (goods.category_id = categories.id)"
+"        ->  Hash Join  (cost=5323.80..5450.91 rows=1586 width=45) (actual time=801.096..849.278 rows=14356 loops=1)"
+"              Hash Cond: (goods.id = orders_non_cash_ge_1000.goods_id)"
+"              ->  Function Scan on dblink goods  (cost=0.00..10.00 rows=1000 width=40) (actual time=760.519..769.588 rows=10167 loops=1)"
+"              ->  Hash  (cost=5147.70..5147.70 rows=14088 width=13) (actual time=40.534..40.534 rows=14356 loops=1)"
+"                    Buckets: 2048  Batches: 1  Memory Usage: 673kB"
+"                    ->  Bitmap Heap Scan on orders_non_cash_ge_1000  (cost=265.60..5147.70 rows=14088 width=13) (actual time=3.211..25.452 rows=14356 loops=1)"
+"                          Recheck Cond: (on_sale_month = 1)"
+"                          ->  Bitmap Index Scan on fki_orders_non_cash_ge_1000_on_sale_month  (cost=0.00..262.08 rows=14088 width=0) (actual time=2.291..2.291 rows=14356 loops=1)"
+"                                Index Cond: (on_sale_month = 1)"
+"        ->  Hash  (cost=10.00..10.00 rows=1000 width=36) (actual time=634.163..634.163 rows=3984 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 259kB"
+"              ->  Function Scan on dblink categories  (cost=0.00..10.00 rows=1000 width=36) (actual time=626.667..630.125 rows=3984 loops=1)"
+"Total runtime: 4303.024 ms"
+
+
+-- чета долго. Ќадо делать репликацию
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(2 вариант)
+
+
+-- скопируем таблицы  goods и  categories_month_sum (“ќЋ№ ќ столбцы id и name)  на сервер B
+
+create table public.goods AS
+(
+select * from 
+public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'select *
+	 from initial.goods') 
+as A(id integer, category_id integer, company_id integer, model text, price numeric(12,2), decription text)
+)
+
+create table  public.categories AS
+(
+select * from 
+public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'select id, title
+	 from initial.categories') 
+as A(id integer, title text)
+)
+
+
+-- добавим индексы
+ALTER TABLE goods ADD PRIMARY KEY (id);
+ALTER TABLE categories ADD PRIMARY KEY (id);
+create INDEX fki_goods_id ON goods(id);
+create INDEX fki_categories_id ON categories(id);
+
+-- перепишем запрос
+
+
+select orders.on_sale_date, categories.title, goods.model, orders.sale_amount
+from 
+   (select goods_id, sale_type_id, on_sale_date, sale_amount
+	from orders_non_cash_ge_1000
+	where on_sale_month = 1) as orders
+join goods on orders.goods_id = goods.id
+join categories on goods.category_id = categories.id
+order by orders.on_sale_date, categories.title, goods.model;
+
+
+"Sort  (cost=7755.66..7790.88 rows=14088 width=43) (actual time=228.262..251.066 rows=14356 loops=1)"
+"  Sort Key: orders_non_cash_ge_1000.on_sale_date, categories.title, goods.model"
+"  Sort Method: external merge  Disk: 768kB"
+"  ->  Hash Join  (cost=1356.83..6784.84 rows=14088 width=43) (actual time=24.373..117.998 rows=14356 loops=1)"
+"        Hash Cond: (goods.category_id = categories.id)"
+"        ->  Hash Join  (cost=1346.36..6580.66 rows=14088 width=19) (actual time=23.676..87.505 rows=14356 loops=1)"
+"              Hash Cond: (orders_non_cash_ge_1000.goods_id = goods.id)"
+"              ->  Bitmap Heap Scan on orders_non_cash_ge_1000  (cost=265.60..5147.70 rows=14088 width=13) (actual time=3.063..23.354 rows=14356 loops=1)"
+"                    Recheck Cond: (on_sale_month = 1)"
+"                    ->  Bitmap Index Scan on fki_orders_non_cash_ge_1000_on_sale_month  (cost=0.00..262.08 rows=14088 width=0) (actual time=2.166..2.166 rows=14356 loops=1)"
+"                          Index Cond: (on_sale_month = 1)"
+"              ->  Hash  (cost=953.67..953.67 rows=10167 width=14) (actual time=20.575..20.575 rows=10167 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 472kB"
+"                    ->  Seq Scan on goods  (cost=0.00..953.67 rows=10167 width=14) (actual time=0.007..10.482 rows=10167 loops=1)"
+"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=0.676..0.676 rows=332 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.010..0.318 rows=332 loops=1)"
+"Total runtime: 263.702 ms"
+
+
+--ќ 
+

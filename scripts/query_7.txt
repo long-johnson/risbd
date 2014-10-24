@@ -1,0 +1,39 @@
+*************
+* 7 запрос: *
+*************
+Для каждого директора должны быть указаны: идентификатор фирмы, ФИО директора, телефон, адрес, банковские реквизиты возглавляемой им фирмы 
+	(название фирмы включать в список не нужно).
+Отсортировать список следующим образом: ФИО директора, идентификатор фирмы.
+Ограничение на максимальное время выполнения запроса:
+? в приложении – 25 мс;
+? используя explain analyze – 6 мс.
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+(1 вариант)
+
+-- Перенесем столбцы таблицы Companies на сервер B
+
+create table public.companies_2part AS
+(
+select * from 
+	public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+			'select *
+			from initial.companies_2part') 
+	as A(id integer, head_full_name text, phone text, address text, bank_details text)
+order by head_full_name, id
+)
+
+-- добавим ключи, индексы
+
+ALTER TABLE companies_2part ADD PRIMARY KEY (id);
+create INDEX fki_companies_2part_id ON companies_2part(id);
+
+-- напишем запрос
+select * from companies_2part
+
+"Seq Scan on companies_2part  (cost=0.00..25.98 rows=598 width=236) (actual time=0.010..0.640 rows=598 loops=1)"
+"Total runtime: 1.146 ms"
+
+
+
+-- Все теперь ОКОКОКОККОКОКОКОКОК

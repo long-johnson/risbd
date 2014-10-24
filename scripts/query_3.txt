@@ -42,7 +42,7 @@ order by companies.name, countries.name
 
 (2 вариант)
 
-Добавим индекс в countries:
+-- Добавим индекс в countries:
 
 create INDEX fki_countries_id
    ON countries(id);
@@ -81,7 +81,7 @@ create INDEX fki_countries_id
 
 (3 вариант)
 
-Выполним вертикальное разбиение, отсортировав по имени:
+--Выполним вертикальное разбиение, отсортировав по имени:
 
   drop table if exists companies_1part;
 CREATE TABLE companies_1part
@@ -90,7 +90,7 @@ drop table if exists companies_2part;
 CREATE TABLE  companies_2part
   AS (SELECT id, head_full_name, phone, address, bank_details FROM companies);
 
-Добавим ключи:
+--Добавим ключи:
 
 create INDEX fki_companies_1part_id
 ON companies_1part(id);
@@ -100,7 +100,8 @@ REFERENCES countries(id);
 ALTER TABLE companies_1part
 ADD PRImary KEY (id)
 
-Запрос:
+--Запрос:
+
 select companies_1part.name, countries.name
 from companies_1part
 join countries on companies_1part.country_id = countries.id
@@ -137,19 +138,15 @@ order by companies_1part.name, countries.name
 
 
 
-
-
-
-
-
 (4 вариант)
 
-В таблицу "companies_1part" вместо country_id вставим названия стран из "countries.name"
-Отсортируем по имени компании. Таким образом будем иметь таблицу, из которой достаточно выбрать все данные - готовый запрос.
-Только так мы получим необходимое время выполнения.
-Так как имена стран изменяются редко и новые страны появляются редко, а кроме того, компании заносятся также нечасто, эта избыточность оправдана.
+--В таблицу "companies_1part" вместо country_id вставим названия стран из "countries.name"
+--Отсортируем по имени компании. Таким образом будем иметь таблицу, из которой достаточно выбрать все данные - готовый запрос.
+--Только так мы получим необходимое время выполнения.
+--Так как имена стран изменяются редко и новые страны появляются редко, а кроме того, компании заносятся также нечасто, эта избыточность оправдана.
 
-Структура:
+--Структура
+
 CREATE TABLE companies_1part
   AS 
   (SELECT companies.id, companies.name, countries.name as country_name, country_id
@@ -158,7 +155,8 @@ CREATE TABLE companies_1part
    order by companies.name, countries.name);
    
    
-Запрос:
+--Запрос
+
 SELECT companies_1part.name, companies_1part.country_name
    FROM companies_1part;   
    
@@ -168,7 +166,7 @@ SELECT companies_1part.name, companies_1part.country_name
 
 
 
-Все теперь ОКОКОКОКОКОКОК
+--Все теперь ОКОКОКОКОКОКОК
    
  
 

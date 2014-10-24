@@ -197,7 +197,7 @@ orders_cash_lt_1000:		sale_amount < 1000 and payment_method_id = 2				81 тыс
 orders_non_cash_ge_1000:	sale_amount >= 1000 and payment_method_id = 1				169 тыс
 orders_cash_ge_1000:		sale_amount >= 1000 and payment_method_id = 2				168 тыс
 
-Запрос теперь:
+--Запрос теперь:
 
 select orders1.on_sale_date, categories.title, companies.name, goods.model, orders1.sale_amount, sale_types.title
 from 
@@ -211,13 +211,15 @@ join sale_types on orders1.sale_type_id = sale_types.id
 order by orders1.on_sale_date, categories.title, companies.name, goods.model;
 
 
-+индексы
+--+индексы
+
 create INDEX fki_orders_cash_ge_1000_id
    ON initial.orders_cash_ge_1000 (id);
 create INDEX fki_orders_cash_ge_1000_on_sale_month
    ON initial.orders_cash_ge_1000 (on_sale_month);
    
-+ключи
+--+ключи
+
 ALTER TABLE orders_cash_ge_1000
 ADD PRIMARY KEY (id);
 ALTER TABLE orders_cash_lt_1000
