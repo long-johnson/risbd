@@ -3,9 +3,9 @@
 *************
 Для заданного покупателя (выбирается из списка всех покупателей, содержащего фамилию, имя, отчество и дату рождения) сформировать в виде Word-документа отчёт,
 включающий его персональные данные и таблицу со списком всех его покупок (совершённых за наличный и безналичный расчёт) за заданный период времени.
-О покупателе должна быть отображена следующая информация: ФИО, дата рождения, e-mail, телефон, серия и номер паспорта.
-Данные в списке покупок должны включать дату покупки, категорию товара, название фирмы-производителя, модель товара, сумму покупки и способ оплаты.
-Отсортировать список следующим образом: дата, категория товара, название фирмы, мо-дель товара.
+- О покупателе должна быть отображена следующая информация: ФИО, дата рождения, e-mail, телефон, серия и номер паспорта.
+- Данные в списке покупок должны включать дату покупки, категорию товара, название фирмы-производителя, модель товара, сумму покупки и способ оплаты.
+  Отсортировать список следующим образом: дата, категория товара, название фирмы, мо-дель товара.
 Ограничение на максимальное время выполнения запроса:
 Запрос для получения списка покупателей и дополнительных персональных данных, нуж-ных для отчёта:
 ? в приложении – 1830 мс;
@@ -18,31 +18,109 @@
 ? используя explain analyze – 170 мс.
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-(1 вариант)
 
--- Перенесем столбцы таблицы Companies на сервер B
 
-create table public.companies_2part AS
-(
+
+
+
+8.1) Получение списка ФИО, Дата рождения
+(8.1 - 1 вариант) 
+
+-- напишем запрос, берущий данные с А
+
 select * from 
 	public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-			'select *
-			from initial.companies_2part') 
-	as A(id integer, head_full_name text, phone text, address text, bank_details text)
-order by head_full_name, id
+		       'select id, surname, name, patronymic, birthdate
+			from initial.sorted_clients') 
+	as sorted_clients(id integer, surname text, name text, patronymic text, birthdate date)
+	
+"Function Scan on dblink sorted_clients  (cost=0.00..10.00 rows=1000 width=104) (actual time=4041.068..4099.967 rows=50000 loops=1)"
+"Total runtime: 4147.636 ms"
+
+
+
+(8.1 - 2 вариант)
+
+-- перенесем нужные столбцы таблицы клиентов на B
+
+create table public.sorted_clients AS
+(
+	select * from
+	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		       'select id, surname, name, patronymic, birthdate, email, phone, passport_series, passport_number
+				from initial.sorted_clients') 
+	as sorted_clients(id integer, surname text, name text, patronymic text, birthdate date, 
+				email text, phone text, passport_series text, passport_number text)
+)
+	
+-- создадим ключ и индекс
+
+ALTER TABLE public.sorted_clients ADD PRIMARY KEY (id);
+create INDEX fki_sorted_clients_id ON public.sorted_clients(id);
+
+-- перепишем запрос
+
+select id, surname, name, patronymic, birthdate
+from sorted_clients
+order by surname
+
+"Sort  (cost=7013.91..7138.91 rows=50000 width=56) (actual time=691.684..863.083 rows=50000 loops=1)"
+"  Sort Key: surname"
+"  Sort Method: external merge  Disk: 3376kB"
+"  ->  Seq Scan on sorted_clients  (cost=0.00..1400.00 rows=50000 width=56) (actual time=0.014..61.335 rows=50000 loops=1)"
+"Total runtime: 906.608 ms"
+
+	
+---------------------------------------------------------------------------------------------------------------------------------------	
+	
+	
+	
+	
+	
+
+	
+8.2) Выбор отдельного клиента
+(8.2 - 1 вариант)
+
+-- запрос на выбор 1-го клиента
+
+select *
+from sorted_clients
+where id = 30001
+
+"Index Scan using fki_sorted_clients_id on sorted_clients  (cost=0.29..8.31 rows=1 width=110) (actual time=0.020..0.022 rows=1 loops=1)"
+"  Index Cond: (id = 30001)"
+"Total runtime: 0.058 ms"
+
+
+
+
+
+
+
+
+
+8.3) Выбор информации о покупках
+Данные в списке покупок должны включать дату покупки, категорию товара, название фирмы-производителя, модель товара, сумму покупки и способ оплаты.
+Отсортировать список следующим образом: дата, категория товара, название фирмы, мо-дель товара.
+
+
+-- Нужно полностью реплицировать таблицу Goods с базы данных А
+
+create table public.orders AS
+(
+	select * from
+	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		       'select id, goods_id, client_id, on_sale_date, sale_amount, payment_method_id, sale_type_id
+		       from initial.orders')
+	as orders(id integer, goods_id integer, client_id integer, on_sale_date date, sale_amount numeric(12,2),
+			payment_method_id integer, sale_type_id integer)
 )
 
--- добавим ключи, индексы
+-- сделаем запрос
 
-ALTER TABLE companies_2part ADD PRIMARY KEY (id);
-create INDEX fki_companies_2part_id ON companies_2part(id);
-
--- напишем запрос
-select * from companies_2part
-
-"Seq Scan on companies_2part  (cost=0.00..25.98 rows=598 width=236) (actual time=0.010..0.640 rows=598 loops=1)"
-"Total runtime: 1.146 ms"
+select orders.on_sale_date, categories_month_sum.title, companies_1part.name, goods.model, orders.sale_amount, payment_methods.title
+from 
 
 
 
--- Все теперь ОКОКОКОККОКОКОКОКОК

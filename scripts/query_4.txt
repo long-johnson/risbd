@@ -53,9 +53,9 @@ order by sale_amount desc
 
 (2 вариант)
  
-Добавить столбец "суммарные покупки" в таблицу Clients.
+--Добавить столбец "суммарные покупки" в таблицу Clients.
 
-Запрос:
+--Запрос:
 
 SELECT clients.surname, clients.name, clients.patronymic, clients.birthdate, sum_sale_amount
 FROM clients
@@ -82,20 +82,25 @@ order by sum_sale_amount desc
 
 (3 вариант)
 
-сделаем таблицу уже отсортированной по умолчанию:
+--сделаем таблицу уже отсортированной по умолчанию:
 
 create table sorted_clients
 as (SELECT *
 FROM clients
 order by sum_sale_amount desc)
 
-Запрос:
+--Запрос:
+
 SELECT surname, name, patronymic, birthdate, sum_sale_amount
 FROM sorted_clients
 
-Время:
+--Время:
+
 "Seq Scan on sorted_clients  (cost=0.00..1971.00 rows=50000 width=56) (actual time=0.012..120.609 rows=50000 loops=1)"
 "Total runtime: 210.337 ms"
 
 
-Все теперь ОКОКОКОКОКОКОК
+--Все теперь ОКОКОКОКОКОКОК
+
+
+-- TODO: sorted_clients --> clients_sorted
