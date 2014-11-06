@@ -3,209 +3,109 @@
 *************
 ѕолучить список всех категорий товаров.
 ƒл€ каждой категории отобразить еЄ название и суммарную выручку от продажи товаров из этой категории за заданный (номером) мес€ц за наличный расчЄт 
-(те категории, у кото-рых не будет товаров, проданных при заданных услови€х, включить в начало списка).
+(те категории, у которых не будет товаров, проданных при заданных услови€х, включить в начало списка).
 ќтсортировать список по убыванию суммарной выручки.
 ќграничение на максимальное врем€ выполнени€ запроса:
-? в приложении Ц 2 мс;
-? использу€ explain analyze Ц 1 мс.
+? в приложении Ц 10 мс;
+? использу€ explain analyze Ц 6 мс.
 -------------------------------------------------------------------------------------
 
 
 
-(1 вариант)  -- до разбиени€ на наличку/безналичку, до тыс/больше тыс
+(1 вариант)
 
-/*SET search_path TO initial;*/
+-- наивный запрос
+
 select categories.title, A.sum_sale_amount
 from categories
 left join 
 (
-	select goods.category_id, sum(orders.sale_amount) as sum_sale_amount
+	select goods.category_id, sum(orders_cash.sale_amount) as sum_sale_amount
 	from goods
-	join orders on goods.id = orders.goods_id
-	where orders.on_sale_month = 1 and orders.payment_method_id = 2
+	join orders_cash on goods.id = orders_cash.goods_id
+	where orders_cash.on_sale_month = 1
 	group by goods.category_id
 ) as A
 on categories.id = A.category_id
 order by A.sum_sale_amount desc
 
-
-
-"Sort  (cost=32892.26..32893.09 rows=332 width=60) (actual time=324.847..325.252 rows=332 loops=1)"
-"  Sort Key: (sum(orders.sale_amount))"
+"Sort  (cost=9643.43..9644.26 rows=332 width=60) (actual time=270.102..270.540 rows=332 loops=1)"
+"  Sort Key: (sum(orders_cash.sale_amount))"
 "  Sort Method: quicksort  Memory: 54kB"
-"  ->  Hash Right Join  (cost=32867.15..32878.36 rows=332 width=60) (actual time=322.510..323.978 rows=332 loops=1)"
+"  ->  Hash Right Join  (cost=9618.32..9629.52 rows=332 width=60) (actual time=267.761..269.294 rows=332 loops=1)"
 "        Hash Cond: (goods.category_id = categories.id)"
-"        ->  HashAggregate  (cost=32856.68..32860.00 rows=332 width=9) (actual time=320.644..321.155 rows=332 loops=1)"
-"              ->  Hash Join  (cost=1917.40..32752.19 rows=20898 width=9) (actual time=65.294..271.553 rows=21424 loops=1)"
-"                    Hash Cond: (orders.goods_id = goods.id)"
-"                    ->  Bitmap Heap Scan on orders  (cost=770.65..31082.99 rows=20898 width=9) (actual time=13.175..139.117 rows=21424 loops=1)"
+"        ->  HashAggregate  (cost=9607.85..9611.17 rows=332 width=9) (actual time=266.059..266.567 rows=332 loops=1)"
+"              ->  Hash Join  (cost=1553.69..9500.42 rows=21486 width=9) (actual time=58.112..206.873 rows=21424 loops=1)"
+"                    Hash Cond: (orders_cash.goods_id = goods.id)"
+"                    ->  Bitmap Heap Scan on orders_cash  (cost=406.94..7816.51 rows=21486 width=9) (actual time=5.146..61.065 rows=21424 loops=1)"
 "                          Recheck Cond: (on_sale_month = 1)"
-"                          Rows Removed by Index Recheck: 209307"
-"                          Filter: (payment_method_id = 2)"
-"                          Rows Removed by Filter: 21235"
-"                          ->  Bitmap Index Scan on orders_on_sale_month_idx  (cost=0.00..765.42 rows=41200 width=0) (actual time=11.315..11.315 rows=42659 loops=1)"
+"                          ->  Bitmap Index Scan on fki_orders_cash_on_sale_month  (cost=0.00..401.56 rows=21486 width=0) (actual time=3.679..3.679 rows=21424 loops=1)"
 "                                Index Cond: (on_sale_month = 1)"
-"                    ->  Hash  (cost=1019.67..1019.67 rows=10167 width=8) (actual time=52.049..52.049 rows=10167 loops=1)"
+"                    ->  Hash  (cost=1019.67..1019.67 rows=10167 width=8) (actual time=52.938..52.938 rows=10167 loops=1)"
 "                          Buckets: 1024  Batches: 1  Memory Usage: 398kB"
-"                          ->  Seq Scan on goods  (cost=0.00..1019.67 rows=10167 width=8) (actual time=0.080..25.203 rows=10167 loops=1)"
-"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.831..1.831 rows=332 loops=1)"
+"                          ->  Seq Scan on goods  (cost=0.00..1019.67 rows=10167 width=8) (actual time=0.082..27.109 rows=10167 loops=1)"
+"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.677..1.677 rows=332 loops=1)"
 "              Buckets: 1024  Batches: 1  Memory Usage: 22kB"
-"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.012..0.863 rows=332 loops=1)"
-"Total runtime: 325.736 ms"
+"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.012..0.846 rows=332 loops=1)"
+"Total runtime: 271.062 ms"
+
+------------
+-- 270 мс --
+------------
 
 
 
 
 
 
+(2 вариант)  
 
+-- создадим таблицу: сategories_month_sum_sale_amount_cash
+-- со столбцами: id, category_id, on_sale_month, sum_sale_amount
+-- т.е. соответствие: категори€, мес€ц -> сумма покупок товаров из данной за наличный расчет категории за данный мес€ц
 
+drop table if exists сategories_month_sum_sale_amount_cash;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(2 вариант)  -- после разбиени€ на наличку/безналичку, до тыс/больше тысээ
-
-
-create INDEX fki_orders_cash_lt_1000_on_sale_month ON orders_cash_lt_1000(on_sale_month);
-create INDEX fki_orders_cash_ge_1000_on_sale_month ON orders_cash_ge_1000(on_sale_month);
-
-
-select categories.title, A.sum_sale_amount
-from categories
-left join 
+create table сategories_month_sum_sale_amount_cash as
 (
-	select goods.category_id, sum(orders1.sale_amount) as sum_sale_amount
-	from goods
-	join (select goods_id, sale_amount
-	      from orders_cash_ge_1000 
-	      where on_sale_month = 1
-	      UNION ALL 
-	      select goods_id, sale_amount
-	      from orders_cash_lt_1000
-	      where on_sale_month = 1) as orders1
-	on goods.id = orders1.goods_id
-	group by goods.category_id
-) as A
-on categories.id = A.category_id
-order by A.sum_sale_amount desc
+	select goods.category_id, orders_cash.on_sale_month,  sum(orders_cash.sale_amount) as sum_sale_amount
+	from orders_cash
+	join goods on goods.id = orders_cash.goods_id
+	group by goods.category_id, orders_cash.on_sale_month
+	order by category_id, on_sale_month
+);
 
-
-"Sort  (cost=9841.96..9842.79 rows=332 width=60) (actual time=353.464..353.868 rows=332 loops=1)"
-"  Sort Key: (sum("*SELECT* 1".sale_amount))"
-"  Sort Method: quicksort  Memory: 54kB"
-"  ->  Hash Right Join  (cost=9816.85..9828.06 rows=332 width=60) (actual time=351.206..352.666 rows=332 loops=1)"
-"        Hash Cond: (goods.category_id = categories.id)"
-"        ->  HashAggregate  (cost=9806.38..9809.70 rows=332 width=9) (actual time=349.624..350.127 rows=332 loops=1)"
-"              ->  Hash Join  (cost=1418.61..9700.08 rows=21260 width=9) (actual time=52.824..301.689 rows=21424 loops=1)"
-"                    Hash Cond: ("*SELECT* 1".goods_id = goods.id)"
-"                    ->  Append  (cost=271.86..8021.83 rows=21260 width=9) (actual time=3.166..174.404 rows=21424 loops=1)"
-"                          ->  Subquery Scan on "*SELECT* 1"  (cost=271.86..5417.38 rows=14379 width=9) (actual time=3.163..82.403 rows=14495 loops=1)"
-"                                ->  Bitmap Heap Scan on orders_cash_ge_1000  (cost=271.86..5273.59 rows=14379 width=9) (actual time=3.158..39.312 rows=14495 loops=1)"
-"                                      Recheck Cond: (on_sale_month = 1)"
-"                                      ->  Bitmap Index Scan on fki_orders_cash_ge_1000_on_sale_month  (cost=0.00..268.26 rows=14379 width=0) (actual time=2.237..2.237 rows=14495 loops=1)"
-"                                            Index Cond: (on_sale_month = 1)"
-"                          ->  Subquery Scan on "*SELECT* 2"  (cost=129.62..2604.44 rows=6881 width=9) (actual time=1.025..33.152 rows=6929 loops=1)"
-"                                ->  Bitmap Heap Scan on orders_cash_lt_1000  (cost=129.62..2535.63 rows=6881 width=9) (actual time=1.021..15.377 rows=6929 loops=1)"
-"                                      Recheck Cond: (on_sale_month = 1)"
-"                                      ->  Bitmap Index Scan on fki_orders_cash_lt_1000_on_sale_month  (cost=0.00..127.90 rows=6881 width=0) (actual time=0.750..0.750 rows=6929 loops=1)"
-"                                            Index Cond: (on_sale_month = 1)"
-"                    ->  Hash  (cost=1019.67..1019.67 rows=10167 width=8) (actual time=49.634..49.634 rows=10167 loops=1)"
-"                          Buckets: 1024  Batches: 1  Memory Usage: 398kB"
-"                          ->  Seq Scan on goods  (cost=0.00..1019.67 rows=10167 width=8) (actual time=0.081..25.324 rows=10167 loops=1)"
-"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.557..1.557 rows=332 loops=1)"
-"              Buckets: 1024  Batches: 1  Memory Usage: 22kB"
-"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.015..0.739 rows=332 loops=1)"
-"Total runtime: 354.367 ms"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(3 вариант)  
-
--- добавим к таблице категорий товаров столбец "мес€ц" и "сумма"
-
-create TABLE categories_month_sum AS(
-	select categories.id, categories.title, A.on_sale_month, A.sum_sale_amount
-	from categories
-	left join 
-	(
-		select goods.category_id, orders1.on_sale_month, sum(orders1.sale_amount) as sum_sale_amount
-		from goods
-		join (select goods_id, on_sale_month, sale_amount
-		      from orders_cash_ge_1000
-		      UNION ALL 
-		      select goods_id, on_sale_month, sale_amount
-		      from orders_cash_lt_1000) as orders1
-		on goods.id = orders1.goods_id
-		group by goods.category_id, orders1.on_sale_month
-	) as A
-	on categories.id = A.category_id
-	order by A.sum_sale_amount desc
-)
-	
+alter table сategories_month_sum_sale_amount_cash add id serial;
+ALTER TABLE сategories_month_sum_sale_amount_cash ADD PRIMARY KEY (id);
+ALTER TABLE сategories_month_sum_sale_amount_cash ADD FOREIGN KEY (category_id) REFERENCES categories(id);
+create INDEX fki_сategories_month_sum_sale_amount_cash_id
+   ON сategories_month_sum_sale_amount_cash(id);
+create INDEX fki_сategories_month_sum_sale_amount_cash_category_id
+   ON сategories_month_sum_sale_amount_cash(category_id);
+create INDEX fki_сategories_month_sum_sale_amount_cash_on_sale_month
+   ON сategories_month_sum_sale_amount_cash(on_sale_month);
+   
 -- запрос
 
-select title, sum_sale_amount
-from categories_month_sum
-where on_sale_month = 1	
-	
-	
-"Seq Scan on categories_month_sum  (cost=0.00..87.80 rows=332 width=35) (actual time=0.047..1.514 rows=332 loops=1)"
-"  Filter: (on_sale_month = 1)"
-"  Rows Removed by Filter: 3652"
-"Total runtime: 2.158 ms"
+select categories.title, сategories_month_sum_sale_amount_cash.sum_sale_amount
+from categories
+left join сategories_month_sum_sale_amount_cash on categories.id = сategories_month_sum_sale_amount_cash.category_id
+where on_sale_month = 1
+order by sum_sale_amount desc
 
+"Sort  (cost=69.94..70.77 rows=332 width=35) (actual time=5.181..5.814 rows=332 loops=1)"
+"  Sort Key: "сategories_month_sum_sale_amount_cash".sum_sale_amount"
+"  Sort Method: quicksort  Memory: 54kB"
+"  ->  Hash Join  (cost=21.32..56.04 rows=332 width=35) (actual time=1.625..3.893 rows=332 loops=1)"
+"        Hash Cond: ("сategories_month_sum_sale_amount_cash".category_id = categories.id)"
+"        ->  Bitmap Heap Scan on "сategories_month_sum_sale_amount_cash"  (cost=10.85..41.00 rows=332 width=11) (actual time=0.063..0.832 rows=332 loops=1)"
+"              Recheck Cond: (on_sale_month = 1)"
+"              ->  Bitmap Index Scan on "fki_сategories_month_sum_sale_amount_cash_on_sale_month"  (cost=0.00..10.77 rows=332 width=0) (actual time=0.049..0.049 rows=332 loops=1)"
+"                    Index Cond: (on_sale_month = 1)"
+"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=1.542..1.542 rows=332 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 22kB"
+"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.009..0.742 rows=332 loops=1)"
 
-
-
-
-
-
-
-
-
-(4 вариант)
-
--- создадим немного индексов
-
-create INDEX fki_categories_month_sum_id ON categories_month_sum(id);
-create INDEX fki_categories_month_sum_on_sale_month ON categories_month_sum(on_sale_month);
-
-
-"Bitmap Heap Scan on categories_month_sum  (cost=10.85..53.00 rows=332 width=35) (actual time=0.068..0.643 rows=332 loops=1)"
-"  Recheck Cond: (on_sale_month = 1)"
-"  ->  Bitmap Index Scan on fki_categories_month_sum_on_sale_month  (cost=0.00..10.77 rows=332 width=0) (actual time=0.049..0.049 rows=332 loops=1)"
-"        Index Cond: (on_sale_month = 1)"
-"Total runtime: 1.092 ms"
-
-
-
+------------
+-- 5.8 мс --
+------------
