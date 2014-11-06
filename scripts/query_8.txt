@@ -120,7 +120,44 @@ create table public.orders AS
 -- сделаем запрос
 
 select orders.on_sale_date, categories_month_sum.title, companies_1part.name, goods.model, orders.sale_amount, payment_methods.title
-from 
+from orders
+join goods on orders.goods_id=goods.id
+join categories on goods.category_id=categories.id
+join(
+		select * from
+		public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		       'select id, name
+		       from initial.companies_1part')
+		as companies_1part(id integer, name text)
+	} as companies_1part
+	on companies_1part
 
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	--new
+	select * from 
+	public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		       'select id, surname || '' '' || name || '' '' || patronymic || '' '' || birthdate as info
+			from initial.sorted_clients 
+			order by info') 
+	as sorted_clients(id integer, info text)
 
 
