@@ -1,0 +1,81 @@
+-- 8.1 --
+
+CREATE OR REPLACE FUNCTION initial.select_8_1() 
+RETURNS TABLE(id integer, info text) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			select id, surname || '' '' || name || '' '' || patronymic || '' '' || birthdate as info
+			from initial.clients
+			order by surname, name, patronymic, birthdate
+		') 
+		as list_of_clients(id integer, info text);
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_8_1();
+
+
+-- 8.2 --
+
+CREATE OR REPLACE FUNCTION initial.select_8_2(id_of_client integer) 
+RETURNS TABLE(id integer, surname text, name text, patronymic text, birthdate date, email text, phone text, passport_series text, passport_number text) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			select id, surname, name, patronymic, birthdate, email, phone, passport_series, passport_number
+			from initial.clients
+			where id = ' || id_of_client || ';
+		'
+		) as current_client(id integer, surname text, name text, patronymic text, birthdate date, email text, phone text, passport_series text, passport_number text);
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_8_2(25465);
+
+
+-- 8.3 --
+
+CREATE OR REPLACE FUNCTION initial.select_8_3(id_of_client integer, begindate date, enddate date) 
+RETURNS TABLE(on_sale_date date, category text, company text, model text, sale_amount numeric(12,2), payment_method text) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		(
+			select orders_non_cash.on_sale_date as on_sale_date, categories.title as category, 
+					companies.name as company, goods.model as model, orders_non_cash.sale_amount, payment_methods.title
+			from orders_non_cash
+			join goods on orders_non_cash.goods_id = goods.id
+			join payment_methods on orders_non_cash.payment_method_id = payment_methods.id 
+			join categories on goods.category_id = categories.id
+			join companies on goods.company_id = companies.id
+			where orders_non_cash.client_id = id_of_client and orders_non_cash.on_sale_date between begindate and enddate
+		)
+		UNION
+		(
+			select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+			'
+				set search_path to initial;
+				select orders_cash.on_sale_date, categories.title, companies.name, goods.model, orders_cash.sale_amount, payment_methods.title
+				from orders_cash
+				join goods on orders_cash.goods_id = goods.id
+				join payment_methods on orders_cash.payment_method_id = payment_methods.id 
+				join categories on goods.category_id = categories.id
+				join companies on goods.company_id = companies.id
+				where orders_cash.client_id = ' || id_of_client || 
+					' and orders_cash.on_sale_date between '' ' || begindate || ' '' and '' ' || enddate || ' '' ;
+			'
+			) as A(on_sale_date date, category text, company text, model text, sale_amount numeric(12,2), payment_method text)
+		)
+		order by on_sale_date, category, company, model;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_8_3(25465, '01-01-1900', '11-12-2999');

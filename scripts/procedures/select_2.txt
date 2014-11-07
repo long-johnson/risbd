@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION initial.select_2(month_num integer, price_to_search numeric(12,2)) 
+RETURNS TABLE(on_sale_date date, category text, company text, model text, sale_amount numeric(12,2), sale_type text) AS $$
+BEGIN
+    set search_path to initial;
+    RETURN QUERY
+        select orders_cash.on_sale_date, categories.title, companies.name, goods.model, orders_cash.sale_amount, sale_types.title
+		from orders_cash
+		join goods on orders_cash.goods_id = goods.id
+		join categories on goods.category_id = categories.id
+		join companies on goods.company_id = companies.id
+		join sale_types on orders_cash.sale_type_id = sale_types.id
+		where orders_cash.sale_amount >= price_to_search and on_sale_month = month_num
+		order by orders_cash.on_sale_date, categories.title, companies.name, goods.model;
+END;
+$$ LANGUAGE plpgsql;

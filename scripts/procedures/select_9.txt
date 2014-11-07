@@ -1,0 +1,76 @@
+-- 9.1 --
+
+CREATE OR REPLACE FUNCTION initial.select_9_1() 
+RETURNS TABLE(id integer, category text) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select categories.id, categories.title
+		from categories
+		order by title;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_9_1();
+
+
+
+-- 9.2 --
+
+CREATE OR REPLACE FUNCTION initial.select_9_2(id_of_category integer, date_for_search date) 
+RETURNS TABLE(company text, model text, sale_amount numeric(12,2), 
+		payment_method text, sale_type text, client text, client_birthdate date) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select companies_name, goods_model, orders_non_cash_sale_amount, 
+		payment_methods_title, sale_types_title, clients.full_name, clients.birthdate
+		from 
+		(
+			(
+				select companies.name as companies_name, goods.model as goods_model, 
+						orders_non_cash.sale_amount as orders_non_cash_sale_amount, payment_methods.title as payment_methods_title, 
+						sale_types.title as sale_types_title, orders_non_cash.client_id as orders_client_id
+				from orders_non_cash
+				join goods on goods.id = orders_non_cash.goods_id
+				join companies on companies.id = goods.company_id
+				join sale_types on sale_types.id = orders_non_cash.sale_type_id
+				join payment_methods on payment_methods.id = orders_non_cash.payment_method_id
+				where goods.category_id = id_of_category and orders_non_cash.on_sale_date = date_for_search
+				
+			)
+			UNION
+			(
+				select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+				'
+					set search_path to initial;
+					select companies.name, goods.model, orders_cash.sale_amount, payment_methods.title, sale_types.title, orders_cash.client_id
+					from orders_cash
+					join goods on goods.id = orders_cash.goods_id
+					join companies on companies.id = goods.company_id
+					join sale_types on sale_types.id = orders_cash.sale_type_id
+					join payment_methods on payment_methods.id = orders_cash.payment_method_id
+					where goods.category_id = ' || id_of_category || ' and orders_cash.on_sale_date = '' ' || date_for_search ||' ''
+				'
+				) as B(companies_name text, goods_model text, orders_non_cash_sale_amount numeric(12,2), 
+						payment_methods_title text, sale_types_title text, orders_client_id integer)
+			)
+		) as C
+		join 
+			(
+				select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+				'
+					set search_path to initial;
+					select clients.id, clients.surname || '' '' || clients.name || '' '' || clients.patronymic as full_name, clients.birthdate
+					from clients
+				'
+				) as clients(id integer, full_name text, birthdate date)
+			) as clients
+		on C.orders_client_id = clients.id
+		order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_cash_sale_amount;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_9_2(2, '29-01-2014');

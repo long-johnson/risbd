@@ -1,0 +1,13 @@
+CREATE OR REPLACE FUNCTION initial.select_7() 
+RETURNS TABLE(id integer, head_full_name text, phone text, address text, bank_details text) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select companies.id, companies.head_full_name, companies.phone, companies.address, companies.bank_details
+		from companies
+		order by head_full_name, id;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_7();

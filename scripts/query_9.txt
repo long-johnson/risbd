@@ -14,7 +14,7 @@
 
 select id, title
 from categories
-order by title
+order by title;
 
 "Sort  (cost=20.22..21.05 rows=332 width=32) (actual time=2.408..2.683 rows=332 loops=1)"
 "  Sort Key: title"
@@ -91,7 +91,7 @@ join
 		) as clients(id integer, full_name text, birthdate date)
 	) as clients
 on C.orders_client_id = clients.id
-order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_cash_sale_amount
+order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_cash_sale_amount;
 
 
 "Sort  (cost=1226.35..1238.88 rows=5010 width=180) (actual time=4582.136..4582.140 rows=5 loops=1)"

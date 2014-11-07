@@ -1,0 +1,11 @@
+CREATE OR REPLACE FUNCTION initial.select_3() 
+RETURNS TABLE(company text, country text) AS $$
+BEGIN
+    set search_path to initial;
+    RETURN QUERY
+        select companies.name, countries.name
+		from companies
+		join countries on companies.country_id = countries.id
+		order by companies.name, countries.name;
+END;
+$$ LANGUAGE plpgsql;

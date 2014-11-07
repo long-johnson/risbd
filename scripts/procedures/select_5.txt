@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION initial.select_5(month_num integer) 
+RETURNS TABLE(category text, sum_sale_amount numeric(12,2)) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select categories.title, ñategories_month_sum_sale_amount_cash.sum_sale_amount
+		from categories
+		left join ñategories_month_sum_sale_amount_cash on categories.id = ñategories_month_sum_sale_amount_cash.category_id
+		where on_sale_month = month_num
+		order by sum_sale_amount desc;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_5(1);

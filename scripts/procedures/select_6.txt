@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION initial.select_6(month_num integer, price_to_search numeric(12,2)) 
+RETURNS TABLE(on_sale_date date, category text, model text, sale_amount numeric(12,2)) AS $$
+BEGIN
+	set search_path to initial;
+	RETURN QUERY
+		select orders_non_cash.on_sale_date, categories.title, goods.model, orders_non_cash.sale_amount
+		from orders_non_cash
+		join goods on orders_non_cash.goods_id = goods.id
+		join categories on goods.category_id = categories.id
+		where orders_non_cash.sale_amount >= price_to_search and on_sale_month = month_num 
+		order by orders_non_cash.on_sale_date, categories.title, goods.model;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_6(1, 1000);

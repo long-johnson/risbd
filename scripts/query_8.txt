@@ -30,7 +30,7 @@ public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris1
 		   'select id, surname || '' '' || name || '' '' || patronymic || '' '' || birthdate as info
 		from initial.clients
 		order by surname, name, patronymic, birthdate') 
-as list_of_clients(id integer, info text)
+as list_of_clients(id integer, info text);
 	
 "Function Scan on dblink list_of_clients  (cost=0.00..10.00 rows=1000 width=36) (actual time=4681.610..4728.870 rows=50000 loops=1)"
 

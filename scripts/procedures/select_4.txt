@@ -1,0 +1,13 @@
+CREATE OR REPLACE FUNCTION initial.select_4() 
+RETURNS TABLE(surname text, name text, patronymic text, birthdate date, sum_sale_amount integer) AS $$
+BEGIN
+    set search_path to initial;
+    RETURN QUERY
+        SELECT clients.surname, clients.name, clients.patronymic, clients.birthdate, clients.sum_sale_amount
+	FROM clients
+	order by sum_sale_amount desc;
+END;
+$$ LANGUAGE plpgsql;
+
+select *
+from initial.select_4();
