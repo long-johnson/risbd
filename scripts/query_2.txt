@@ -72,7 +72,7 @@ order by orders.on_sale_date, categories.title, companies.name, goods.model;
 
 (2 вариант)
 
- -- добавить столбец "мес€ц" + по нему индекс
+-- добавить столбец "мес€ц" + по нему индекс
  
 alter table orders add column on_sale_month integer;
 update orders 
@@ -163,14 +163,11 @@ ALTER TABLE orders_cash ADD FOREIGN KEY (client_id) REFERENCES clients(id);
 ALTER TABLE orders_cash ADD FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id);
 ALTER TABLE orders_cash ADD FOREIGN KEY (sale_type_id) REFERENCES sale_types(id);
 
-create INDEX fki_orders_cash_id
-   ON orders_cash(id);
-create INDEX fki_orders_cash_on_sale_date
-   ON orders_cash(on_sale_date);
-create INDEX fki_orders_cash_on_sale_month
-   ON orders_cash(on_sale_month);
-create INDEX fki_orders_cash_goods_id
-   ON orders_cash(goods_id);
+create INDEX ON orders_cash(id);
+create INDEX ON orders_cash(on_sale_date);
+create INDEX ON orders_cash(on_sale_month);
+create INDEX ON orders_cash(goods_id);
+create INDEX ON orders_cash(client_id);
    
    
 -- выполним запрос

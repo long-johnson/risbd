@@ -11,29 +11,19 @@
 
 (1 вариант)
 
--- Перенесем столбцы таблицы Companies на сервер B
-
-create table public.companies_2part AS
-(
-select * from 
-	public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-			'select *
-			from initial.companies_2part') 
-	as A(id integer, head_full_name text, phone text, address text, bank_details text)
-order by head_full_name, id
-)
-
--- добавим ключи, индексы
-
-ALTER TABLE companies_2part ADD PRIMARY KEY (id);
-create INDEX fki_companies_2part_id ON companies_2part(id);
+-- перенесем таблицу компаний на сервер B (TODO: без столбца country_id)
 
 -- напишем запрос
-select * from companies_2part
 
-"Seq Scan on companies_2part  (cost=0.00..25.98 rows=598 width=236) (actual time=0.010..0.640 rows=598 loops=1)"
-"Total runtime: 1.146 ms"
+select id, head_full_name, phone, address, bank_details
+from companies
+order by head_full_name, id
 
+"Sort  (cost=55.56..57.05 rows=598 width=236) (actual time=5.541..5.997 rows=598 loops=1)"
+"  Sort Key: head_full_name, id"
+"  Sort Method: quicksort  Memory: 231kB"
+"  ->  Seq Scan on companies  (cost=0.00..27.98 rows=598 width=236) (actual time=0.014..0.663 rows=598 loops=1)"
 
-
--- Все теперь ОКОКОКОККОКОКОКОКОК
+--------------
+-- 5.997 мс --
+--------------

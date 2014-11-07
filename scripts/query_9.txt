@@ -2,7 +2,7 @@
 * 9 запрос: *
 *************
 Для заданной даты сформировать в виде Excel-документа отчёт, включающий в себя список всех проданных товаров из заданной категории.
-Заголовком отчёта должна быть информация об указанной дате и выбранной категории то-варов.
+Заголовком отчёта должна быть информация об указанной дате и выбранной категории товаров.
 В самом списке должна быть отображена следующая информация: название фирмы, модель, сумма продажи, способ оплаты, тип поставки, ФИО и дата рождения покупателя.
 Отсортировать список следующим образом: способ оплаты, название фирмы, модель, сумма продажи.
 Ограничение на максимальное время выполнения запроса:
@@ -10,5 +10,128 @@
 ? используя explain analyze – 1650 мс.
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
+9.1) Выбрать список всех категорий
+
+select id, title
+from categories
+order by title
+
+"Sort  (cost=20.22..21.05 rows=332 width=32) (actual time=2.408..2.683 rows=332 loops=1)"
+"  Sort Key: title"
+"  Sort Method: quicksort  Memory: 53kB"
+"  ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.060..0.417 rows=332 loops=1)"
+
+------------
+-- 2.6 мс --
+------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+9.2) Список всех проданных товаров из данной категории
+
 (1 вариант)
+
+select companies_name, goods_model, orders_non_cash_sale_amount, 
+		payment_methods_title, sale_types_title, clients.full_name, clients.birthdate
+from 
+(
+	(
+		select companies.name as companies_name, goods.model as goods_model, 
+				orders_non_cash.sale_amount as orders_non_cash_sale_amount, payment_methods.title as payment_methods_title, 
+				sale_types.title as sale_types_title, orders_non_cash.client_id as orders_client_id
+		from orders_non_cash
+		join goods on goods.id = orders_non_cash.goods_id
+		join companies on companies.id = goods.company_id
+		join sale_types on sale_types.id = orders_non_cash.sale_type_id
+		join payment_methods on payment_methods.id = orders_non_cash.payment_method_id
+		where goods.category_id = 2 and orders_non_cash.on_sale_date = '29-01-2014'
+		
+	)
+	UNION
+	(
+		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			select companies.name, goods.model, orders_cash.sale_amount, payment_methods.title, sale_types.title, orders_cash.client_id
+			from orders_cash
+			join goods on goods.id = orders_cash.goods_id
+			join companies on companies.id = goods.company_id
+			join sale_types on sale_types.id = orders_cash.sale_type_id
+			join payment_methods on payment_methods.id = orders_cash.payment_method_id
+			where goods.category_id = 2 and orders_cash.on_sale_date = ''01-29-2014''
+		'
+		) as B(companies_name text, goods_model text, orders_non_cash_sale_amount numeric(12,2), 
+				payment_methods_title text, sale_types_title text, orders_client_id integer)
+	)
+) as C
+join 
+	(
+		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			select clients.id, clients.surname || '' '' || clients.name || '' '' || clients.patronymic as full_name, clients.birthdate
+			from clients
+		'
+		) as clients(id integer, full_name text, birthdate date)
+	) as clients
+on C.orders_client_id = clients.id
+order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_cash_sale_amount
+
+
+"Sort  (cost=1226.35..1238.88 rows=5010 width=180) (actual time=4582.136..4582.140 rows=5 loops=1)"
+"  Sort Key: payment_methods.title, companies.name, goods.model, orders_non_cash.sale_amount"
+"  Sort Method: quicksort  Memory: 26kB"
+"  ->  Merge Join  (cost=838.32..918.47 rows=5010 width=180) (actual time=4524.418..4582.079 rows=5 loops=1)"
+"        Merge Cond: (clients.id = orders_non_cash.client_id)"
+"        ->  Sort  (cost=59.83..62.33 rows=1000 width=40) (actual time=4136.686..4174.419 rows=38372 loops=1)"
+"              Sort Key: clients.id"
+"              Sort Method: external sort  Disk: 3392kB"
+"              ->  Function Scan on dblink clients  (cost=0.00..10.00 rows=1000 width=40) (actual time=3993.481..4047.989 rows=50000 loops=1)"
+"        ->  Sort  (cost=778.49..781.00 rows=1002 width=148) (actual time=375.095..375.100 rows=5 loops=1)"
+"              Sort Key: orders_non_cash.client_id"
+"              Sort Method: quicksort  Memory: 25kB"
+"              ->  HashAggregate  (cost=708.51..718.53 rows=1002 width=148) (actual time=375.059..375.066 rows=5 loops=1)"
+"                    ->  Append  (cost=19.39..693.48 rows=1002 width=148) (actual time=0.308..375.020 rows=5 loops=1)"
+"                          ->  Nested Loop  (cost=19.39..673.46 rows=2 width=95) (actual time=0.306..5.198 rows=3 loops=1)"
+"                                ->  Nested Loop  (cost=19.26..673.11 rows=2 width=67) (actual time=0.293..5.157 rows=3 loops=1)"
+"                                      ->  Nested Loop  (cost=19.13..672.76 rows=2 width=39) (actual time=0.281..5.115 rows=3 loops=1)"
+"                                            ->  Nested Loop  (cost=18.86..666.08 rows=2 width=27) (actual time=0.265..5.033 rows=3 loops=1)"
+"                                                  ->  Index Scan using goods_category_id_idx on goods  (cost=0.29..10.79 rows=29 width=14) (actual time=0.028..0.081 rows=29 loops=1)"
+"                                                        Index Cond: (category_id = 2)"
+"                                                  ->  Bitmap Heap Scan on orders_non_cash  (cost=18.57..22.59 rows=1 width=21) (actual time=0.159..0.159 rows=0 loops=29)"
+"                                                        Recheck Cond: ((goods_id = goods.id) AND (on_sale_date = '2014-01-29'::date))"
+"                                                        ->  BitmapAnd  (cost=18.57..18.57 rows=1 width=0) (actual time=0.154..0.154 rows=0 loops=29)"
+"                                                              ->  Bitmap Index Scan on orders_non_cash_goods_id_idx  (cost=0.00..4.61 rows=25 width=0) (actual time=0.009..0.009 rows=13 loops=29)"
+"                                                                    Index Cond: (goods_id = goods.id)"
+"                                                              ->  Bitmap Index Scan on orders_non_cash_on_sale_date_idx  (cost=0.00..13.54 rows=683 width=0) (actual time=0.136..0.136 rows=760 loops=29)"
+"                                                                    Index Cond: (on_sale_date = '2014-01-29'::date)"
+"                                            ->  Index Scan using companies_id_idx on companies  (cost=0.28..3.33 rows=1 width=20) (actual time=0.017..0.019 rows=1 loops=3)"
+"                                                  Index Cond: (id = goods.company_id)"
+"                                      ->  Index Scan using sale_types_id_idx on sale_types  (cost=0.13..0.17 rows=1 width=36) (actual time=0.005..0.006 rows=1 loops=3)"
+"                                            Index Cond: (id = orders_non_cash.sale_type_id)"
+"                                ->  Index Scan using payment_methods_id_idx on payment_methods  (cost=0.13..0.17 rows=1 width=36) (actual time=0.005..0.006 rows=1 loops=3)"
+"                                      Index Cond: (id = orders_non_cash.payment_method_id)"
+"                          ->  Function Scan on dblink b  (cost=0.00..10.00 rows=1000 width=148) (actual time=369.806..369.808 rows=2 loops=1)"
+"Total runtime: 4587.356 ms"
+
+
+-------------
+-- 4500 мс --
+-------------
 

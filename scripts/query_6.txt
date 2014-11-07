@@ -1,3 +1,25 @@
+
+-- (дополнительно) добавим primary key с индексом для всех таблиц по id
+
+ALTER TABLE orders ADD PRIMARY KEY (id);
+create INDEX ON orders(id);
+ALTER TABLE categories ADD PRIMARY KEY (id);
+create INDEX ON categories(id);
+ALTER TABLE clients ADD PRIMARY KEY (id);
+create INDEX ON clients(id);
+ALTER TABLE companies ADD PRIMARY KEY (id);
+create INDEX ON companies(id);
+ALTER TABLE countries ADD PRIMARY KEY (id);
+create INDEX ON countries(id);
+ALTER TABLE goods ADD PRIMARY KEY (id);
+create INDEX ON goods(id);
+ALTER TABLE payment_methods ADD PRIMARY KEY (id);
+create INDEX ON payment_methods(id);
+ALTER TABLE sale_types ADD PRIMARY KEY (id);
+create INDEX ON sale_types(id);
+
+
+
 *************
 * 6 запрос: *
 *************
@@ -11,145 +33,85 @@
 
 (1 вариант)
 
--- перенесем таблицу "безнал. покупки >= 1000" на сервер B
 
-create table public.orders_non_cash_ge_1000 AS
-(
-select * from 
-public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-	'select id, goods_id, client_id, on_sale_date, sale_amount, sale_type_id, details, on_sale_month
-	 from initial.orders_non_cash_ge_1000') 
-as A(id integer, goods_id integer, client_id integer, on_sale_date date, sale_amount numeric(12,2), sale_type_id integer, details text, on_sale_month integer)
-)
+-- 1) Таблица безналичных покупок "orders_non_cash" перенесена с сервера A на сервер B
 
--- добавим необходимые индексы и ограничения
+-- добавить столбец "месяц" + по нему индекс
+ 
+SET search_path TO initial;
 
-ALTER TABLE orders_non_cash_ge_1000 ADD PRIMARY KEY (id);
-create INDEX fki_categories_month_sum_id ON categories_month_sum(id);
-create INDEX fki_orders_non_cash_ge_1000_id ON orders_non_cash_ge_1000(id);
-create INDEX fki_orders_non_cash_ge_1000_on_sale_month ON orders_non_cash_ge_1000(on_sale_month);
+alter table orders add column on_sale_month integer;
+update orders 
+  set on_sale_month = date_part('month', on_sale_date);
+create index on orders (on_sale_month);
 
--- напишем запрос на выборку
+-- создадим таблицу "orders_non_cash" (сервер B)
 
-select orders.on_sale_date, categories.title, goods.model, orders.sale_amount
-from 
-   (select goods_id, sale_type_id, on_sale_date, sale_amount
-	from orders_non_cash_ge_1000
-	where on_sale_month = 1) as orders
-join (
-	select * from
-	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4', 'select id, category_id, model from initial.goods') 
-	as goods(id integer, category_id integer, model text)
-      ) as goods
-on orders.goods_id = goods.id
-join (
-	select * from
-	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4', 'select id, title from initial.categories_month_sum') 
-        as categories(id integer, title text)
-     ) as categories
-on goods.category_id = categories.id
-order by orders.on_sale_date, categories.title, goods.model;
+drop table if exists orders_non_cash;
+
+create table orders_non_cash as(
+	select *
+	from orders
+	where orders.payment_method_id = 1
+);
+
+ALTER TABLE orders_non_cash ADD PRIMARY KEY (id);
+ALTER TABLE orders_non_cash ADD FOREIGN KEY (goods_id) REFERENCES goods(id);
+
+ALTER TABLE orders_non_cash ADD FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id);
+ALTER TABLE orders_non_cash ADD FOREIGN KEY (sale_type_id) REFERENCES sale_types(id);
+
+create INDEX ON orders_non_cash(id);
+create INDEX ON orders_non_cash(on_sale_date);
+create INDEX ON orders_non_cash(on_sale_month);
+create INDEX ON orders_non_cash(goods_id);
+create INDEX ON orders_non_cash(client_id);
 
 
-
-"Sort  (cost=6268.52..6288.35 rows=7930 width=73) (actual time=3559.083..4168.225 rows=172272 loops=1)"
-"  Sort Key: orders_non_cash_ge_1000.on_sale_date, categories.title, goods.model"
-"  Sort Method: external merge  Disk: 9240kB"
-"  ->  Hash Join  (cost=5346.31..5754.93 rows=7930 width=73) (actual time=1435.275..1671.103 rows=172272 loops=1)"
-"        Hash Cond: (goods.category_id = categories.id)"
-"        ->  Hash Join  (cost=5323.80..5450.91 rows=1586 width=45) (actual time=801.096..849.278 rows=14356 loops=1)"
-"              Hash Cond: (goods.id = orders_non_cash_ge_1000.goods_id)"
-"              ->  Function Scan on dblink goods  (cost=0.00..10.00 rows=1000 width=40) (actual time=760.519..769.588 rows=10167 loops=1)"
-"              ->  Hash  (cost=5147.70..5147.70 rows=14088 width=13) (actual time=40.534..40.534 rows=14356 loops=1)"
-"                    Buckets: 2048  Batches: 1  Memory Usage: 673kB"
-"                    ->  Bitmap Heap Scan on orders_non_cash_ge_1000  (cost=265.60..5147.70 rows=14088 width=13) (actual time=3.211..25.452 rows=14356 loops=1)"
-"                          Recheck Cond: (on_sale_month = 1)"
-"                          ->  Bitmap Index Scan on fki_orders_non_cash_ge_1000_on_sale_month  (cost=0.00..262.08 rows=14088 width=0) (actual time=2.291..2.291 rows=14356 loops=1)"
-"                                Index Cond: (on_sale_month = 1)"
-"        ->  Hash  (cost=10.00..10.00 rows=1000 width=36) (actual time=634.163..634.163 rows=3984 loops=1)"
-"              Buckets: 1024  Batches: 1  Memory Usage: 259kB"
-"              ->  Function Scan on dblink categories  (cost=0.00..10.00 rows=1000 width=36) (actual time=626.667..630.125 rows=3984 loops=1)"
-"Total runtime: 4303.024 ms"
+-- 2) Перенесем таблицу Categories на сервер B
 
 
--- чета долго. Надо делать репликацию
+-- 3) Перенесем таблицу Goods на сервер B
+
+ALTER TABLE goods ADD FOREIGN KEY (category_id) REFERENCES categories(id);
+ALTER TABLE goods ADD FOREIGN KEY (company_id) REFERENCES companies(id);
+
+create INDEX ON goods(id);
+create INDEX ON goods(category_id);
+create INDEX ON goods(company_id);
 
 
 
+-- 4) напишем запрос на выборку
 
-
-
-
-
-
-
-
-
-
-
-
-(2 вариант)
-
-
--- скопируем таблицы  goods и  categories_month_sum (ТОЛЬКО столбцы id и name)  на сервер B
-
-create table public.goods AS
-(
-select * from 
-public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-	'select *
-	 from initial.goods') 
-as A(id integer, category_id integer, company_id integer, model text, price numeric(12,2), decription text)
-)
-
-create table  public.categories AS
-(
-select * from 
-public.dblink ('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-	'select id, title
-	 from initial.categories') 
-as A(id integer, title text)
-)
-
-
--- добавим индексы
-ALTER TABLE goods ADD PRIMARY KEY (id);
-ALTER TABLE categories ADD PRIMARY KEY (id);
-create INDEX fki_goods_id ON goods(id);
-create INDEX fki_categories_id ON categories(id);
-
--- перепишем запрос
-
-
-select orders.on_sale_date, categories.title, goods.model, orders.sale_amount
-from 
-   (select goods_id, sale_type_id, on_sale_date, sale_amount
-	from orders_non_cash_ge_1000
-	where on_sale_month = 1) as orders
-join goods on orders.goods_id = goods.id
+select orders_non_cash.on_sale_date, categories.title, goods.model, orders_non_cash.sale_amount
+from orders_non_cash
+join goods on orders_non_cash.goods_id = goods.id
 join categories on goods.category_id = categories.id
-order by orders.on_sale_date, categories.title, goods.model;
+where orders_non_cash.sale_amount >= 1000 and on_sale_month = 1
+order by orders_non_cash.on_sale_date, categories.title, goods.model;
 
-
-"Sort  (cost=7755.66..7790.88 rows=14088 width=43) (actual time=228.262..251.066 rows=14356 loops=1)"
-"  Sort Key: orders_non_cash_ge_1000.on_sale_date, categories.title, goods.model"
-"  Sort Method: external merge  Disk: 768kB"
-"  ->  Hash Join  (cost=1356.83..6784.84 rows=14088 width=43) (actual time=24.373..117.998 rows=14356 loops=1)"
+"Sort  (cost=10579.41..10615.51 rows=14437 width=43) (actual time=251.264..276.565 rows=14356 loops=1)"
+"  Sort Key: orders_non_cash.on_sale_date, categories.title, goods.model"
+"  Sort Method: external merge  Disk: 776kB"
+"  ->  Hash Join  (cost=1557.36..9582.00 rows=14437 width=43) (actual time=26.370..135.890 rows=14356 loops=1)"
 "        Hash Cond: (goods.category_id = categories.id)"
-"        ->  Hash Join  (cost=1346.36..6580.66 rows=14088 width=19) (actual time=23.676..87.505 rows=14356 loops=1)"
-"              Hash Cond: (orders_non_cash_ge_1000.goods_id = goods.id)"
-"              ->  Bitmap Heap Scan on orders_non_cash_ge_1000  (cost=265.60..5147.70 rows=14088 width=13) (actual time=3.063..23.354 rows=14356 loops=1)"
+"        ->  Hash Join  (cost=1546.89..9373.02 rows=14437 width=19) (actual time=25.675..105.813 rows=14356 loops=1)"
+"              Hash Cond: (orders_non_cash.goods_id = goods.id)"
+"              ->  Bitmap Heap Scan on orders_non_cash  (cost=400.13..7865.34 rows=14437 width=13) (actual time=4.858..40.042 rows=14356 loops=1)"
 "                    Recheck Cond: (on_sale_month = 1)"
-"                    ->  Bitmap Index Scan on fki_orders_non_cash_ge_1000_on_sale_month  (cost=0.00..262.08 rows=14088 width=0) (actual time=2.166..2.166 rows=14356 loops=1)"
+"                    Filter: (sale_amount >= 1000::numeric)"
+"                    Rows Removed by Filter: 6879"
+"                    ->  Bitmap Index Scan on orders_non_cash_on_sale_month_idx  (cost=0.00..396.52 rows=21347 width=0) (actual time=3.461..3.461 rows=21235 loops=1)"
 "                          Index Cond: (on_sale_month = 1)"
-"              ->  Hash  (cost=953.67..953.67 rows=10167 width=14) (actual time=20.575..20.575 rows=10167 loops=1)"
+"              ->  Hash  (cost=1019.67..1019.67 rows=10167 width=14) (actual time=20.781..20.781 rows=10167 loops=1)"
 "                    Buckets: 1024  Batches: 1  Memory Usage: 472kB"
-"                    ->  Seq Scan on goods  (cost=0.00..953.67 rows=10167 width=14) (actual time=0.007..10.482 rows=10167 loops=1)"
-"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=0.676..0.676 rows=332 loops=1)"
+"                    ->  Seq Scan on goods  (cost=0.00..1019.67 rows=10167 width=14) (actual time=0.090..10.705 rows=10167 loops=1)"
+"        ->  Hash  (cost=6.32..6.32 rows=332 width=32) (actual time=0.678..0.678 rows=332 loops=1)"
 "              Buckets: 1024  Batches: 1  Memory Usage: 22kB"
-"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.010..0.318 rows=332 loops=1)"
-"Total runtime: 263.702 ms"
+"              ->  Seq Scan on categories  (cost=0.00..6.32 rows=332 width=32) (actual time=0.008..0.295 rows=332 loops=1)"
 
-
---ОК
+------------
+-- 276 мс --
+------------
 
