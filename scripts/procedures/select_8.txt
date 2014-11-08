@@ -1,17 +1,13 @@
 -- 8.1 --
 
 CREATE OR REPLACE FUNCTION initial.select_8_1() 
-RETURNS TABLE(id integer, info text) AS $$
+RETURNS TABLE(id integer, surname text, name text, patronymic text, birthdate date) AS $$
 BEGIN
 	set search_path to initial;
 	RETURN QUERY
-		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
-		'
-			select id, surname || '' '' || name || '' '' || patronymic || '' '' || birthdate as info
-			from initial.clients
-			order by surname, name, patronymic, birthdate
-		') 
-		as list_of_clients(id integer, info text);
+		select *
+		from clients
+		order by surname, name, patronymic, birthdate;
 END;
 $$ LANGUAGE plpgsql;
 

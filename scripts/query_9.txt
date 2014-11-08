@@ -128,10 +128,85 @@ order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_
 "                                ->  Index Scan using payment_methods_id_idx on payment_methods  (cost=0.13..0.17 rows=1 width=36) (actual time=0.005..0.006 rows=1 loops=3)"
 "                                      Index Cond: (id = orders_non_cash.payment_method_id)"
 "                          ->  Function Scan on dblink b  (cost=0.00..10.00 rows=1000 width=148) (actual time=369.806..369.808 rows=2 loops=1)"
-"Total runtime: 4587.356 ms"
 
 
 -------------
 -- 4500 мс --
 -------------
 
+
+(2 вариант)
+
+-- перенесли clients (id, фио, birthdate) на B
+-- новый запрос:
+
+select companies_name, goods_model, orders_non_cash_sale_amount, 
+		payment_methods_title, sale_types_title, clients.surname, clients.name, clients.patronymic, clients.birthdate
+from 
+(
+	(
+		select companies.name as companies_name, goods.model as goods_model, 
+				orders_non_cash.sale_amount as orders_non_cash_sale_amount, payment_methods.title as payment_methods_title, 
+				sale_types.title as sale_types_title, orders_non_cash.client_id as orders_client_id
+		from orders_non_cash
+		join goods on goods.id = orders_non_cash.goods_id
+		join companies on companies.id = goods.company_id
+		join sale_types on sale_types.id = orders_non_cash.sale_type_id
+		join payment_methods on payment_methods.id = orders_non_cash.payment_method_id
+		where goods.category_id = 2 and orders_non_cash.on_sale_date = '29-01-2014'
+		
+	)
+	UNION
+	(
+		select * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			select companies.name, goods.model, orders_cash.sale_amount, payment_methods.title, sale_types.title, orders_cash.client_id
+			from orders_cash
+			join goods on goods.id = orders_cash.goods_id
+			join companies on companies.id = goods.company_id
+			join sale_types on sale_types.id = orders_cash.sale_type_id
+			join payment_methods on payment_methods.id = orders_cash.payment_method_id
+			where goods.category_id = 2 and orders_cash.on_sale_date = ''01-29-2014''
+		'
+		) as B(companies_name text, goods_model text, orders_non_cash_sale_amount numeric(12,2), 
+				payment_methods_title text, sale_types_title text, orders_client_id integer)
+	)
+) as C
+join clients on C.orders_client_id = clients.id
+order by C.payment_methods_title, C.companies_name, C.goods_model, C.orders_non_cash_sale_amount;
+
+"Sort  (cost=3492.77..3495.28 rows=1002 width=196) (actual time=216.956..216.960 rows=5 loops=1)"
+"  Sort Key: payment_methods.title, companies.name, goods.model, orders_non_cash.sale_amount"
+"  Sort Method: quicksort  Memory: 26kB"
+"  ->  Hash Join  (cost=2873.51..3442.83 rows=1002 width=196) (actual time=200.504..216.901 rows=5 loops=1)"
+"        Hash Cond: (orders_non_cash.client_id = clients.id)"
+"        ->  HashAggregate  (cost=708.51..718.53 rows=1002 width=148) (actual time=75.177..75.202 rows=5 loops=1)"
+"              ->  Append  (cost=19.39..693.48 rows=1002 width=148) (actual time=0.273..75.142 rows=5 loops=1)"
+"                    ->  Nested Loop  (cost=19.39..673.46 rows=2 width=95) (actual time=0.270..5.004 rows=3 loops=1)"
+"                          ->  Nested Loop  (cost=19.26..673.11 rows=2 width=67) (actual time=0.261..4.972 rows=3 loops=1)"
+"                                ->  Nested Loop  (cost=19.13..672.76 rows=2 width=39) (actual time=0.252..4.940 rows=3 loops=1)"
+"                                      ->  Nested Loop  (cost=18.86..666.08 rows=2 width=27) (actual time=0.240..4.898 rows=3 loops=1)"
+"                                            ->  Index Scan using goods_category_id_idx on goods  (cost=0.29..10.79 rows=29 width=14) (actual time=0.016..0.066 rows=29 loops=1)"
+"                                                  Index Cond: (category_id = 2)"
+"                                            ->  Bitmap Heap Scan on orders_non_cash  (cost=18.57..22.59 rows=1 width=21) (actual time=0.156..0.156 rows=0 loops=29)"
+"                                                  Recheck Cond: ((goods_id = goods.id) AND (on_sale_date = '2014-01-29'::date))"
+"                                                  ->  BitmapAnd  (cost=18.57..18.57 rows=1 width=0) (actual time=0.151..0.151 rows=0 loops=29)"
+"                                                        ->  Bitmap Index Scan on orders_non_cash_goods_id_idx  (cost=0.00..4.61 rows=25 width=0) (actual time=0.009..0.009 rows=13 loops=29)"
+"                                                              Index Cond: (goods_id = goods.id)"
+"                                                        ->  Bitmap Index Scan on orders_non_cash_on_sale_date_idx  (cost=0.00..13.54 rows=683 width=0) (actual time=0.134..0.134 rows=760 loops=29)"
+"                                                              Index Cond: (on_sale_date = '2014-01-29'::date)"
+"                                      ->  Index Scan using companies_id_idx on companies  (cost=0.28..3.33 rows=1 width=20) (actual time=0.007..0.008 rows=1 loops=3)"
+"                                            Index Cond: (id = goods.company_id)"
+"                                ->  Index Scan using sale_types_id_idx on sale_types  (cost=0.13..0.17 rows=1 width=36) (actual time=0.004..0.005 rows=1 loops=3)"
+"                                      Index Cond: (id = orders_non_cash.sale_type_id)"
+"                          ->  Index Scan using payment_methods_id_idx on payment_methods  (cost=0.13..0.17 rows=1 width=36) (actual time=0.003..0.005 rows=1 loops=3)"
+"                                Index Cond: (id = orders_non_cash.payment_method_id)"
+"                    ->  Function Scan on dblink b  (cost=0.00..10.00 rows=1000 width=148) (actual time=70.121..70.123 rows=2 loops=1)"
+"        ->  Hash  (cost=1051.00..1051.00 rows=50000 width=56) (actual time=118.018..118.018 rows=50000 loops=1)"
+"              Buckets: 2048  Batches: 8  Memory Usage: 563kB"
+"              ->  Seq Scan on clients  (cost=0.00..1051.00 rows=50000 width=56) (actual time=0.013..48.690 rows=50000 loops=1)"
+
+------------
+-- 217 мс --
+------------

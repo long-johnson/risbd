@@ -38,8 +38,46 @@ as list_of_clients(id integer, info text);
 -------------
 -- 4700 мс --
 -------------
-	
 
+
+(2 вариант)
+
+-- перенесем столбцы Clients (id, surname, name, patronymic, birthdate) на сервер B
+
+create table clients as
+(
+	select * from 
+	public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		      '
+				select id, surname, name, patronymic, birthdate
+				from initial.clients
+		      ') 
+	as list_of_clients(id integer, surname text, name text, patronymic text, birthdate date)
+)
+	
+-- новый запрос
+
+select *
+from clients
+order by surname, name, patronymic, birthdate;
+
+"Sort  (cost=6664.91..6789.91 rows=50000 width=56) (actual time=729.079..1018.894 rows=50000 loops=1)"
+"  Sort Key: surname, name, patronymic, birthdate"
+"  Sort Method: external merge  Disk: 3360kB"
+"  ->  Seq Scan on clients  (cost=0.00..1051.00 rows=50000 width=56) (actual time=0.012..46.224 rows=50000 loops=1)"
+"Total runtime: 1061.880 ms"
+
+-------------
+-- 1000 мс --
+-------------
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
