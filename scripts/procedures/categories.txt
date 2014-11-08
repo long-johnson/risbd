@@ -1,0 +1,153 @@
+------------
+-- insert --
+------------
+
+-- B --
+
+drop function if exists initial.insert_categories_B(text);
+CREATE OR REPLACE FUNCTION initial.insert_categories_B(_title text) 
+RETURNS setof void as $$
+DECLARE new_id integer;
+BEGIN
+	set search_path to initial;
+	-- get maximal id
+	SELECT categories.id into new_id 
+	FROM categories 
+	ORDER BY id DESC 
+	LIMIT 1;
+	-- new_id is max_id + 1
+	new_id := new_id + 1;
+	-- insert into table on B
+	insert into categories(id, title)
+		values(new_id, _title);
+	-- insert into table on A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.insert_categories_A(' || new_id ||  ', '' ' || _title || ' '');
+	');
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- A --
+
+drop function if exists initial.insert_categories_A(integer, text);
+CREATE OR REPLACE FUNCTION initial.insert_categories_A(_id integer, _title text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	-- insert into table on A
+	insert into categories(id, title)
+		values(_id, _title);
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------
+-- update --
+------------
+
+-- B --
+
+drop function if exists initial.update_categories_B(integer, text);
+CREATE OR REPLACE FUNCTION initial.update_categories_B(_id integer, _title text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	-- update table on B
+	update categories
+	set categories.title = _title
+	where categories.id = _id;
+	-- update table on A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from
+		initial.update_categories_A(' || _id ||  ', '' ' || _title || ' '');
+	');
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- A --
+
+drop function if exists initial.update_categories_A(integer, text);
+CREATE OR REPLACE FUNCTION initial.update_categories_A(_id integer, _title text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	-- update table on A
+	update categories
+	set categories.title = _title
+	where categories.id = _id;
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+------------
+-- delete --
+------------
+
+-- B --
+
+drop function if exists initial.delete_categories_B(integer);
+CREATE OR REPLACE FUNCTION initial.delete_categories_B(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	-- delete from table on B
+	delete from categories
+	where categories.id = _id;
+	-- delete from table on A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from
+		initial.delete_categories_A(' || _id ||  ');
+	');
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- A --
+
+drop function if exists initial.delete_categories_A(integer);
+CREATE OR REPLACE FUNCTION initial.delete_categories_A(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	-- delete from table on A
+	delete from categories
+	where categories.id = _id;
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
