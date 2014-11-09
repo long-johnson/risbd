@@ -1,0 +1,190 @@
+------------
+-- insert --
+------------
+
+-- B --
+
+drop function if exists initial.insert_clients_B( text,  text,  text,  date,  text,  text,  text, text,  text,  date,  text);
+CREATE OR REPLACE FUNCTION initial.insert_clients_B(_surname text, _name text, _patronymic text, _birthdate date, _phone text, _email text, _address text, 
+													_passport_series text, _passport_number text, _issue_date date, _issue_department text) 
+RETURNS setof void as $$
+DECLARE new_id integer;
+BEGIN
+	set search_path to initial;
+	
+	-- get maximal id
+	SELECT clients.id into new_id 
+	FROM clients
+	ORDER BY id DESC 
+	LIMIT 1;
+	-- new_id is max_id + 1
+	new_id := new_id + 1;
+	
+	-- insert into table B
+	insert into clients(id, surname, name, patronymic)
+		values(new_id, _surname, _name, _patronymic, _birthdate);
+	
+	-- insert into table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.insert_clients_A(' || new_id || ' , ' '' || _surname || ' '' , '' ' || _name || ' '' , '' ' || _patronymic || ' '', '' '
+		|| _birthdate  || ' '' , '' ' ||  _phone  || ' '' , '' ' ||  _email  || ' '' , '' ' ||  _address  || ' '' , '' ' ||  _passport_series  ||
+		' '' , '' ' ||  _passport_number  || ' '' , '' ' ||  _issue_date  || ' '' , '' ' ||  _issue_department  || ' ''
+		);
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.insert_clients_A(integer, text,  text,  text,  date,  text,  text,  text, text,  text,  date,  text);
+CREATE OR REPLACE FUNCTION initial.insert_clients_A(_id integer, _surname text, _name text, _patronymic text, _birthdate date, _phone text, _email text, _address text, 
+													_passport_series text, _passport_number text, _issue_date date, _issue_department text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- insert into table A
+	-- and sum_sale_amount to zero!
+	insert into clients(id, surname, name, patronymic, phone, email, address, passport_series, passport_number, issue_date, issue_department, sum_sale_amount)
+	values(_id, _surname, _name, _patronymic, _birthdate, _phone, _email, _address, _passport_series, _passport_number, _issue_date, _issue_department, 0);
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+------------
+-- update --
+------------
+
+-- B --
+
+drop function if exists initial.update_clients_B(integer, text,  text,  text,  date,  text,  text,  text, text,  text,  date,  text);
+CREATE OR REPLACE FUNCTION initial.update_clients_B(_id integer, _surname text, _name text, _patronymic text, _birthdate date, _phone text, _email text, _address text, 
+													_passport_series text, _passport_number text, _issue_date date, _issue_department text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table B
+	update clients
+	set clients.surname = _surname, clients.name = _name, clients.patronymic = _patronymic,  clients.birthdate = _birthdate
+	where clients.id = _id;
+	
+	-- update table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.update_clients_A(' || _id || ' , ' '' || _surname || ' '' , '' ' || _name || ' '' , '' ' || _patronymic || ' '', '' '
+		|| _birthdate  || ' '' , '' ' ||  _phone  || ' '' , '' ' ||  _email  || ' '' , '' ' ||  _address  || ' '' , '' ' ||  _passport_series  ||
+		' '' , '' ' ||  _passport_number  || ' '' , '' ' ||  _issue_date  || ' '' , '' ' ||  _issue_department  || ' ''
+		);
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.update_clients_A(integer, text,  text,  text,  date,  text,  text,  text, text,  text,  date,  text);
+CREATE OR REPLACE FUNCTION initial.update_clients_A(_id integer, _surname text, _name text, _patronymic text, _birthdate date, _phone text, _email text, _address text, 
+													_passport_series text, _passport_number text, _issue_date date, _issue_department text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table A
+	update clients
+	set clients.surname = _surname, clients.name = _name, clients.patronymic = _patronymic,  clients.birthdate = _birthdate, clients.phone = _phone, 
+		clients.email = _email,  clients.address = _address,  clients.passport_series = _passport_series, clients.passport_number = _passport_number, 
+		clients.issue_date = _issue_date, clients.issue_department = _issue_department
+	where clients.id = _id;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+------------
+-- delete --
+------------
+
+-- B --
+
+drop function if exists initial.delete_clients_B(integer);
+CREATE OR REPLACE FUNCTION initial.delete_clients_B(_id integer) 
+RETURNS setof void as $$
+DECLARE _count_clients integer;
+BEGIN
+	set search_path to initial;
+	
+	-- check if this client_id is not used in orders_cash
+	select check_for_key.count_clients into _count_clients
+	from
+		public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			SELECT count(*)
+			FROM orders_cash
+			where orders_cash.client_id = ' || _id || ';
+		') as check_for_key(count_clients integer);
+	if _count_clients <> 0
+	then
+		raise exception 'Foreign key violation (_id) is used in orders_cash(A)';
+		return;
+	end if;
+	
+	-- delete from table B
+	delete from clients
+	where clients.id = _id;
+	
+	-- delete from table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.delete_clients_A(' || _id || ');
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.delete_clients_A(integer);
+CREATE OR REPLACE FUNCTION initial.delete_clients_A(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- delete from table A
+	delete from clients
+	where clients.id = _id;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;

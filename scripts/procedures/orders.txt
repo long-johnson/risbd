@@ -1,0 +1,209 @@
+------------
+-- insert --
+------------
+
+-- B --
+
+drop function if exists initial.insert_orders_B(integer, integer, date, numeric(12,2), integer, integer, text);
+CREATE OR REPLACE FUNCTION initial.insert_orders_B(_goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
+												_payment_method_id integer, _sale_type_id integer, _details text) 
+RETURNS setof void as $$
+declare max_id_A integer;
+declare max_id_B integer;
+declare new_id integer;
+declare _on_sale_month integer;
+BEGIN
+	set search_path to initial;
+	
+	-- get maximal id from B
+	SELECT orders_non_cash.id into max_id_B 
+	FROM orders_non_cash
+	ORDER BY id DESC 
+	LIMIT 1;
+	
+	-- get maximal id from A
+	select get_max_id.max_id into max_id_A
+	from
+		public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			SELECT orders_cash.id 
+			FROM orders_cash
+			ORDER BY orders_cash.id DESC 
+			LIMIT 1;
+		') as get_max_id(max_id integer);
+	
+	-- new_id is max(max_id_A, max_id_B) + 1
+	if max_id_B > max_id_A
+	then
+		new_id := max_id_B + 1;
+	else
+		new_id := max_id_A + 1;
+	end if;
+	
+	-- extract month from date
+	_on_sale_month := date_part('month', _on_sale_date);
+	
+	-- insert in accordance with payment method
+	if (_payment_method_id = 1)
+	then
+		-- insert into table B
+		insert into orders_non_cash(id, goods_id, client_id, on_sale_date, sale_amount, payment_method_id, sale_type_id, details, on_sale_month)
+			values(new_id, _goods_id, _client_id, _on_sale_date, _sale_amount, _payment_method_id, _sale_type_id, _details, _on_sale_month);
+	else
+		-- insert into table A
+		public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			select * from 
+			initial.insert_orders_A(' || new_id || ' , ' || _goods_id || ' , ' || _client_id || ' , '' ' || _on_sale_date || ' '', '
+			|| _sale_amount  || ' , ' ||  _payment_method_id  || ' , ' ||  _sale_type_id  || ' , '' ' ||  _details  || ' '' , ' ||  _on_sale_month  || '
+			);
+		');
+	end if;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- A --
+
+drop function if exists initial.insert_orders_A(integer, integer, integer, date, numeric(12,2), integer, integer, text, integer);
+CREATE OR REPLACE FUNCTION initial.insert_orders_A(_id integer, _goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
+												_payment_method_id integer, _sale_type_id integer, _details text, _on_sale_month integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- insert into table A
+	insert into orders_cash(id, goods_id, client_id, on_sale_date, sale_amount, payment_method_id, sale_type_id, details, on_sale_month)
+		values(_id, _goods_id, _client_id, _on_sale_date, _sale_amount, _payment_method_id, _sale_type_id, _details, _on_sale_month);
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+------------
+-- update --
+------------
+
+drop function if exists initial.update_orders_B(integer, integer, integer, date, numeric(12,2), integer, integer, text);
+CREATE OR REPLACE FUNCTION initial.update_orders_B(_id integer, _goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
+												_payment_method_id integer, _sale_type_id integer, _details text) 
+RETURNS setof void as $$
+declare _on_sale_month integer;
+BEGIN
+	set search_path to initial;
+	
+	-- extract month from date
+	_on_sale_month := date_part('month', _on_sale_date);
+	
+	-- update table B
+	update orders_non_cash
+	set orders_non_cash.goods_id = _goods_id, orders_non_cash.client_id = _client_id, 
+		orders_non_cash.on_sale_date = _on_sale_date, orders_non_cash.sale_amount = _sale_amount,
+		orders_non_cash.payment_method_id = _payment_method_id, orders_non_cash.sale_type_id = _sale_type_id,
+		orders_non_cash.details = _details, orders_non_cash.on_sale_month = _on_sale_month
+	where orders_non_cash.id = _id
+	
+	-- update table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			select * from 
+			initial.update_orders_A(' || _id || ' , ' || _goods_id || ' , ' || _client_id || ' , '' ' || _on_sale_date || ' '', '
+			|| _sale_amount  || ' , ' ||  _payment_method_id  || ' , ' ||  _sale_type_id  || ' , '' ' ||  _details  || ' '' , ' ||  _on_sale_month  || '
+			);
+		');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- A --
+
+drop function if exists initial.update_orders_A(integer, integer, integer, date, numeric(12,2), integer, integer, text, integer);
+CREATE OR REPLACE FUNCTION initial.update_orders_A(_id integer, _goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
+												_payment_method_id integer, _sale_type_id integer, _details text, _on_sale_month integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table A
+	update orders_cash
+	set orders_cash.goods_id = _goods_id, orders_cash.client_id = _client_id, 
+		orders_cash.on_sale_date = _on_sale_date, orders_cash.sale_amount = _sale_amount,
+		orders_cash.payment_method_id = _payment_method_id, orders_cash.sale_type_id = _sale_type_id,
+		orders_cash.details = _details, orders_cash.on_sale_month = _on_sale_month
+	where orders_cash.id = _id
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------
+-- delete --
+------------
+
+-- B --
+
+drop function if exists initial.delete_orders_B(integer);
+CREATE OR REPLACE FUNCTION initial.delete_orders_B(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table B
+	delete from orders_non_cash
+	where orders_non_cash.id = _id
+	
+	-- update table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			select * from 
+			initial.delete_orders_A(' || _id || '
+			);
+		');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.delete_orders_A(integer);
+CREATE OR REPLACE FUNCTION initial.delete_orders_A(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- delete table A
+	delete from orders_cash
+	where orders_cash.id = _id
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;

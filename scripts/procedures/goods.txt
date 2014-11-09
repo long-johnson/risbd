@@ -1,0 +1,191 @@
+------------
+-- insert --
+------------
+
+-- B --
+
+drop function if exists initial.insert_goods_B(integer, integer, text, numeric, text);
+CREATE OR REPLACE FUNCTION initial.insert_goods_B(_category_id integer, _company_id integer, _model text, _price numeric(12,2), _description text) 
+RETURNS setof void as $$
+DECLARE new_id integer;
+BEGIN
+	set search_path to initial;
+	
+	-- get maximal id
+	SELECT goods.id into new_id 
+	FROM goods
+	ORDER BY id DESC 
+	LIMIT 1;
+	-- new_id is max_id + 1
+	new_id := new_id + 1;
+	
+	-- insert into table B
+	insert into goods(id, category_id, company_id, model, price, description)
+		values(new_id, _category_id, _company_id, _model, _price, _description);
+	
+	-- insert into table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.insert_goods_A(' || new_id || ' , ' || _category_id || ' , ' || _company_id || ' ,'' ' || _model || ' '', ' || _price  || ' , '' ' ||  _description  || ' '');
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.insert_goods_A(integer, integer, integer, text, numeric, text);
+CREATE OR REPLACE FUNCTION initial.insert_goods_A(_id integer, _category_id integer, _company_id integer, _model text, _price numeric(12,2), _description text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- insert into table A
+	insert into goods(id, category_id, company_id, model, price, description)
+		values(_id, _category_id, _company_id, _model, _price, _description);
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+------------
+-- update --
+------------
+
+-- B --
+
+drop function if exists initial.update_goods_B(integer, integer, integer, text, numeric, text);
+CREATE OR REPLACE FUNCTION initial.update_goods_B(_id integer, _category_id integer, _company_id integer, _model text, _price numeric(12,2), _description text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table B
+	update goods
+	set goods.category_id = _category_id, goods.company_id = _company_id, 
+		goods.model = _model, goods.price = _price, goods.description = _description
+	where goods.id = _id;
+	
+	-- update table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from 
+		initial.update_goods_A(' || _id || ' , ' || _category_id || ' , ' || _company_id || ' ,'' ' || _model || ' '', ' || _price  || ' , '' ' ||  _description  || ' '');
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- À --
+
+drop function if exists initial.update_goods_A(integer, integer, integer, text, numeric, text);
+CREATE OR REPLACE FUNCTION initial.update_goods_A(_id integer, _category_id integer, _company_id integer, _model text, _price numeric(12,2), _description text) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- update table A
+	update goods
+	set goods.category_id = _category_id, goods.company_id = _company_id, 
+		goods.model = _model, goods.price = _price, goods.description = _description
+	where goods.id = _id;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------
+-- delete --
+------------
+
+-- B --
+
+drop function if exists initial.delete_goods_B(integer);
+CREATE OR REPLACE FUNCTION initial.delete_goods_B(_id integer) 
+RETURNS setof void as $$
+DECLARE _count_goods integer;
+BEGIN
+	set search_path to initial;
+	
+	-- check that row to delete from goods: goods.id is neither in orders_cash (A) nor in orders_non_cash (B - auto)
+	
+	select check_for_key.count_goods into _count_goods
+	from
+		public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+		'
+			set search_path to initial;
+			SELECT count(*)
+			FROM orders_cash
+			where orders_cash.goods_id = ' || _id || ';
+		') as check_for_key(count_goods integer);
+	if _count_goods <> 0
+	then
+		raise exception 'Foreign key violation (_id) is used in orders_cash(A)';
+		return;
+	end if;
+	
+	-- delete from table B
+	delete from goods
+	where goods.id = _id;
+	
+	-- delete from table A
+	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	'
+		select * from
+		initial.delete_goods_A(' || _id || ');
+	');
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-- A --
+
+drop function if exists initial.delete_goods_A(integer);
+CREATE OR REPLACE FUNCTION initial.delete_goods_A(_id integer) 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	-- delete from table A
+	delete from goods
+	where goods.id = _id;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
