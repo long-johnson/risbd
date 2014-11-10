@@ -72,6 +72,7 @@ drop function if exists initial.insert_orders_A(integer, integer, integer, date,
 CREATE OR REPLACE FUNCTION initial.insert_orders_A(_id integer, _goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
 												_payment_method_id integer, _sale_type_id integer, _details text, _on_sale_month integer) 
 RETURNS setof void as $$
+declare _category_id integer;
 BEGIN
 	set search_path to initial;
 	
@@ -79,9 +80,85 @@ BEGIN
 	insert into orders_cash(id, goods_id, client_id, on_sale_date, sale_amount, payment_method_id, sale_type_id, details, on_sale_month)
 		values(_id, _goods_id, _client_id, _on_sale_date, _sale_amount, _payment_method_id, _sale_type_id, _details, _on_sale_month);
 	
+	-- get _category_id to change
+	select goods.category_id
+	into _category_id
+	from goods
+	where goods.id = _goods_id;
+	
+	-- TODO:	update categories_month_sum_sale_amount_cash
+	initial.update_categories_month_sum_A(_category_id, _on_sale_month, _sale_amount); 
+	
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
+
+-- Вставка в Orders 
+-- @_category_id, @_on_sale_month, @_sale_amount_diff = новая цена - старая цена
+drop function if exists initial.update_categories_month_sum_A(integer, integer, numeric(12,2));
+CREATE OR REPLACE FUNCTION initial.update_categories_month_sum_A(_category_id integer, _on_sale_month integer, _sale_amount_diff numeric(12,2)); 
+RETURNS setof void as $$
+count_entries integer;
+current_value integer;
+new_value integer;
+BEGIN
+	set search_path to initial;
+	
+	-- find if there is already (_category_id, _on_sale_month) tuple in "categories_month_sum_sale_amount_cash"
+	select count(*)
+	into count_entries
+	from categories_month_sum_sale_amount_cash
+	where categories_month_sum_sale_amount_cash.category_id = _category_id and categories_month_sum_sale_amount_cash.on_sale_month = _on_sale_month
+	group by categories_month_sum_sale_amount_cash.category_id, categories_month_sum_sale_amount_cash.on_sale_month;
+	
+	-- если нет вхождения и разница отрицательная: ошибка
+	if count_entries = 0 and _sale_amount_diff < 0
+	then
+		raise exception 'Trying to decrease value that doesnt exits in categories_month_sum_sale_amount_cash';
+		return;
+	end if;
+	
+	-- если нет вхождения, создадим его
+	if count_entries = 0
+	then
+		insert into categories_month_sum_sale_amount_cash(category_id, on_sale_month, sum_sale_amount)
+			values(_category_id, _on_sale_month, 0);
+	end if;
+	
+	-- найдем текущее значение
+	select categories_month_sum_sale_amount_cash.sum_sale_amount
+	into current_value
+	from categories_month_sum_sale_amount_cash
+	where categories_month_sum_sale_amount_cash.category_id = _category_id and categories_month_sum_sale_amount_cash.on_sale_month = _on_sale_month;
+	
+	-- найдем новое значение
+	new_value := current_value + _sale_amount_diff;
+	
+	if new_value > 0	-- new_value > 0 : прибавим разницу к текущему вхождению
+	then
+		update categories_month_sum_sale_amount_cash
+		set categories_month_sum_sale_amount_cash.sum_sale_amount = new_value
+		where categories_month_sum_sale_amount_cash.category_id = _category_id and categories_month_sum_sale_amount_cash.on_sale_month = _on_sale_month;
+	else				-- new_value <= 0 : удалим данную строку
+		delete from categories_month_sum_sale_amount_cash
+		where categories_month_sum_sale_amount_cash.category_id = _category_id and categories_month_sum_sale_amount_cash.on_sale_month = _on_sale_month;
+	end if;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -134,8 +211,19 @@ drop function if exists initial.update_orders_A(integer, integer, integer, date,
 CREATE OR REPLACE FUNCTION initial.update_orders_A(_id integer, _goods_id integer, _client_id integer, _on_sale_date date, _sale_amount numeric(12,2), 
 												_payment_method_id integer, _sale_type_id integer, _details text, _on_sale_month integer) 
 RETURNS setof void as $$
+declare current_value numeric(12,2);
+declare current_on_sale_month integer;
+declare current_goods_id integer;
+declare current_category_id integer;
+declare value_difference numeric(12,2);
 BEGIN
 	set search_path to initial;
+	
+	-- get old value of orders_cash.sale_amount
+	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount
+	into current_goods_id, current_on_sale_month, current_value
+	from orders_cash
+	where orders_cash.id = _id;
 	
 	-- update table A
 	update orders_cash
@@ -144,6 +232,29 @@ BEGIN
 		orders_cash.payment_method_id = _payment_method_id, orders_cash.sale_type_id = _sale_type_id,
 		orders_cash.details = _details, orders_cash.on_sale_month = _on_sale_month
 	where orders_cash.id = _id
+	
+	-- diff = new - old
+	value_difference := _on_sale_month - current_value;
+	
+	-- если месяц или категория изменились
+	if current_on_sale_month <> _on_sale_month or current_goods_id <> _goods_id
+	then
+		-- определим старую категорию
+		select goods.category_id
+		into current_category_id
+		from goods
+		where goods.id = current_goods_id;
+		
+		-- отнимем из старой категории/месяца
+		current_value := -current_value;
+		initial.update_categories_month_sum_A(current_category_id, current_on_sale_month, current_value);
+		
+	end if;
+	
+	-- update categories_month_sum_sale_amount_cash
+	initial.update_categories_month_sum_A(_category_id, _on_sale_month, value_difference);
+	
+	-- TODO: if _goods_id or _on_sale_month changes
 	
 	RETURN;
 END;
@@ -197,12 +308,34 @@ $$ LANGUAGE plpgsql;
 drop function if exists initial.delete_orders_A(integer);
 CREATE OR REPLACE FUNCTION initial.delete_orders_A(_id integer) 
 RETURNS setof void as $$
+declare value_difference numeric(12,2);
+declare _category_id integer;
+declare _on_sale_month integer;
+declare _goods_id integer;
 BEGIN
 	set search_path to initial;
 	
-	-- delete table A
+	-- find old sale_amount
+	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount
+	into _goods_id, _on_sale_month, value_difference
+	from orders_cash
+	where orders_cash.id = _id;
+	
+	-- invert difference
+	value_difference := -value_difference;
+	
+	-- delete from table A
 	delete from orders_cash
 	where orders_cash.id = _id
+	
+	-- определим старую категорию
+	select goods.category_id
+	into _category_id
+	from goods
+	where goods.id = _goods_id;
+	
+	-- update categories_month_sum_sale_amount_cash
+	initial.update_categories_month_sum_A(_category_id, _on_sale_month, value_difference);
 	
 	RETURN;
 END;
