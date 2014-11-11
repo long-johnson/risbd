@@ -86,15 +86,41 @@ BEGIN
 	from goods
 	where goods.id = _goods_id;
 	
-	-- TODO:	update categories_month_sum_sale_amount_cash
+	-- update categories_month_sum_sale_amount_cash
 	initial.update_categories_month_sum_A(_category_id, _on_sale_month, _sale_amount); 
+	
+	-- update clients.sum_sale_amount
+	initial.update_clients_sum_sale_amount(_client_id, _sale_amount);
 	
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
 
 
--- Вставка в Orders 
+
+
+
+-- Вставка изменений в 'update_clients_sum_sale_amount'
+-- @_category_id, @_sale_amount_diff = новая цена - старая цена
+drop function if exists initial.update_clients_sum_sale_amount(integer, numeric(12,2));
+CREATE OR REPLACE FUNCTION initial.update_clients_sum_sale_amount(_client_id integer, _sale_amount_diff numeric(12,2)); 
+RETURNS setof void as $$
+BEGIN
+	set search_path to initial;
+	
+	update clients
+	set clients.sum_sale_amount = clients.sum_sale_amount + _sale_amount_diff
+	where clients.id = _client_id;
+	
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+-- Вставка изменений в 'categories_month_sum_sale_amount_cash'
 -- @_category_id, @_on_sale_month, @_sale_amount_diff = новая цена - старая цена
 drop function if exists initial.update_categories_month_sum_A(integer, integer, numeric(12,2));
 CREATE OR REPLACE FUNCTION initial.update_categories_month_sum_A(_category_id integer, _on_sale_month integer, _sale_amount_diff numeric(12,2)); 
@@ -168,6 +194,14 @@ $$ LANGUAGE plpgsql;
 
 
 
+
+
+
+
+
+
+
+
 ------------
 -- update --
 ------------
@@ -216,12 +250,14 @@ declare current_on_sale_month integer;
 declare current_goods_id integer;
 declare current_category_id integer;
 declare value_difference numeric(12,2);
+declare current_client_id integer;
+declare _current_client_sum_sale_amount integer;
 BEGIN
 	set search_path to initial;
 	
 	-- get old value of orders_cash.sale_amount
-	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount
-	into current_goods_id, current_on_sale_month, current_value
+	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount, orders_cash.client_id
+	into current_goods_id, current_on_sale_month, current_value, current_client_id
 	from orders_cash
 	where orders_cash.id = _id;
 	
@@ -236,6 +272,7 @@ BEGIN
 	-- diff = new - old
 	value_difference := _on_sale_month - current_value;
 	
+	current_value := -current_value;
 	-- если месяц или категория изменились
 	if current_on_sale_month <> _on_sale_month or current_goods_id <> _goods_id
 	then
@@ -246,19 +283,30 @@ BEGIN
 		where goods.id = current_goods_id;
 		
 		-- отнимем из старой категории/месяца
-		current_value := -current_value;
+		
 		initial.update_categories_month_sum_A(current_category_id, current_on_sale_month, current_value);
 		
 	end if;
 	
+	-- если id клиента изменился
+	if current_client_id <> _client_id
+	then
+		-- отнимем из старого клиента
+		initial.update_clients_sum_sale_amount(current_client_id, current_value);
+	end if;
+	
+	
 	-- update categories_month_sum_sale_amount_cash
 	initial.update_categories_month_sum_A(_category_id, _on_sale_month, value_difference);
+	-- update clients.sum_sale_amount
+	initial.update_clients_sum_sale_amount(_client_id, value_difference);
 	
-	-- TODO: if _goods_id or _on_sale_month changes
 	
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
+
 
 
 
@@ -312,12 +360,13 @@ declare value_difference numeric(12,2);
 declare _category_id integer;
 declare _on_sale_month integer;
 declare _goods_id integer;
+declare _client_id integer;
 BEGIN
 	set search_path to initial;
 	
 	-- find old sale_amount
-	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount
-	into _goods_id, _on_sale_month, value_difference
+	select orders_cash.goods_id, orders_cash.on_sale_month, orders_cash.sale_amount, orders_cash.client_id
+	into _goods_id, _on_sale_month, value_difference, _client_id
 	from orders_cash
 	where orders_cash.id = _id;
 	
@@ -336,6 +385,9 @@ BEGIN
 	
 	-- update categories_month_sum_sale_amount_cash
 	initial.update_categories_month_sum_A(_category_id, _on_sale_month, value_difference);
+	
+	-- update clients.sum_sale_amount
+	initial.update_clients_sum_sale_amount(_client_id, value_difference);
 	
 	RETURN;
 END;
