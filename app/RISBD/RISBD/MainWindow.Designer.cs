@@ -797,7 +797,7 @@
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 22.66402F));
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 77.33598F));
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 105F));
-            this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 141F));
+            this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 142F));
             this.tableLayoutPanel14.Controls.Add(this.label9, 0, 0);
             this.tableLayoutPanel14.Controls.Add(this.comboBox_clients8, 1, 0);
             this.tableLayoutPanel14.Controls.Add(this.button_refresh8, 2, 0);
@@ -826,13 +826,13 @@
             this.comboBox_clients8.FormattingEnabled = true;
             this.comboBox_clients8.Location = new System.Drawing.Point(116, 3);
             this.comboBox_clients8.Name = "comboBox_clients8";
-            this.comboBox_clients8.Size = new System.Drawing.Size(381, 21);
+            this.comboBox_clients8.Size = new System.Drawing.Size(380, 21);
             this.comboBox_clients8.TabIndex = 7;
             this.comboBox_clients8.SelectedIndexChanged += new System.EventHandler(this.comboBox_clients8_SelectedIndexChanged);
             // 
             // button_refresh8
             // 
-            this.button_refresh8.Location = new System.Drawing.Point(503, 3);
+            this.button_refresh8.Location = new System.Drawing.Point(502, 3);
             this.button_refresh8.Name = "button_refresh8";
             this.button_refresh8.Size = new System.Drawing.Size(69, 23);
             this.button_refresh8.TabIndex = 8;
@@ -1106,14 +1106,14 @@
             // категорииToolStripMenuItem
             // 
             this.категорииToolStripMenuItem.Name = "категорииToolStripMenuItem";
-            this.категорииToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.категорииToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.категорииToolStripMenuItem.Text = "Категории";
             this.категорииToolStripMenuItem.Click += new System.EventHandler(this.категорииToolStripMenuItem_Click);
             // 
             // клиентыToolStripMenuItem
             // 
             this.клиентыToolStripMenuItem.Name = "клиентыToolStripMenuItem";
-            this.клиентыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.клиентыToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.клиентыToolStripMenuItem.Text = "Клиенты";
             this.клиентыToolStripMenuItem.Click += new System.EventHandler(this.клиентыToolStripMenuItem_Click);
             // 
@@ -1122,17 +1122,18 @@
             this.компанииToolStripMenuItem.Name = "компанииToolStripMenuItem";
             this.компанииToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.компанииToolStripMenuItem.Text = "Компании";
+            this.компанииToolStripMenuItem.Click += new System.EventHandler(this.компанииToolStripMenuItem_Click);
             // 
             // товарыToolStripMenuItem
             // 
             this.товарыToolStripMenuItem.Name = "товарыToolStripMenuItem";
-            this.товарыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.товарыToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.товарыToolStripMenuItem.Text = "Товары";
             // 
             // продажиToolStripMenuItem
             // 
             this.продажиToolStripMenuItem.Name = "продажиToolStripMenuItem";
-            this.продажиToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.продажиToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.продажиToolStripMenuItem.Text = "Продажи";
             // 
             // MainWindow

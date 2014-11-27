@@ -361,7 +361,7 @@
             this.ClientSize = new System.Drawing.Size(712, 468);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "AddClient";
-            this.Text = "AddClient";
+            this.Text = "Модификация таблицы клиентов";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AddClient_FormClosing);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);

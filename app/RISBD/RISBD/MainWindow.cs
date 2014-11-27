@@ -23,6 +23,7 @@ namespace RISBD
 
         AddCategory formAddCategory;  // форма манипуляций с категориями
         AddClient formAddClient;      // форма манипуляций с клиентами
+        AddCompany formAddCompany;    // форма манипуляций с компаниями
 
         /// <summary>
         /// конструктор
@@ -41,6 +42,7 @@ namespace RISBD
             conn_B = new NpgsqlConnection("server=localhost; database=postgres; user Id=test; password=test");
             formAddCategory = new AddCategory(conn_B);
             formAddClient = new AddClient(conn_A, conn_B);
+            formAddCompany = new AddCompany(conn_A, conn_B);
            // formAddCategory.Show();
         }
 
@@ -73,6 +75,11 @@ namespace RISBD
             catch (NpgsqlException ex)
             {
                 MessageBox.Show("Ошибка:\n" + ex.Message, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка:\n" + ex.Message, "Неизвестная ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             return true;
@@ -360,6 +367,11 @@ namespace RISBD
         private void клиентыToolStripMenuItem_Click(object sender, EventArgs e)
         {
             formAddClient.Show();
+        }
+
+        private void компанииToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            formAddCompany.Show();
         }
 
 

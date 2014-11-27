@@ -97,8 +97,6 @@ namespace RISBD
         /// <summary>
         /// Изменим клиента по ID
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void button_update_Click(object sender, EventArgs e)
         {
             // проверка на пустую строку
@@ -141,13 +139,13 @@ namespace RISBD
 
         private void button_delete_Click(object sender, EventArgs e)
         {
-            // проверка, что категория была выбрана
+            // проверка, что клиент был выбран
             if (dataGrid_results.SelectedRows.Count < 1)
             {
                 MessageBox.Show("Выберите клиента для изменения", "Ошибка удаления", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // получим id категории
+            // получим id клиента
             int id = Convert.ToInt32(dataGrid_results.SelectedRows[0].Cells[0].Value);
             // Открываем подключение
             if (!MainWindow.open_connection(ref conn_B)) return;    // используются функции из родительской формы !
@@ -156,7 +154,7 @@ namespace RISBD
             command.Parameters.AddWithValue("id", id);
             if (!AddCategory.executeNonQuery(command, conn_B)) return;                 // попробуем произвести вставку
             conn_B.Close();                                             // закроем соединение
-            //button_refresh_Click(null, null);                          // обновим таблицу категорий
+            //button_refresh_Click(null, null);                          // обновим таблицу клиентов
         }
     }
 }
