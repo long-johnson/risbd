@@ -21,6 +21,9 @@ namespace RISBD
         DataSet dataSetQuery8;        // таблицы из запроса 8 (клиент + его_покупки)
         DataSet dataSetQuery9;        // таблица проданных товаров из некоторой категории ()
 
+        AddCategory formAddCategory;  // форма манипуляций с категориями
+        AddClient formAddClient;      // форма манипуляций с клиентами
+
         /// <summary>
         /// конструктор
         /// </summary>
@@ -33,6 +36,12 @@ namespace RISBD
             // Очищаем набор данных
             dataSetQuery8.Clear();
             dataSetQuery9.Clear();
+            // задаим строки подключения
+            conn_A = new NpgsqlConnection("server=students.ami.nstu.ru; database=risbd4; user Id=risbd4; password=ris14bd4");
+            conn_B = new NpgsqlConnection("server=localhost; database=postgres; user Id=test; password=test");
+            formAddCategory = new AddCategory(conn_B);
+            formAddClient = new AddClient(conn_A, conn_B);
+           // formAddCategory.Show();
         }
 
         private void tableLayoutPanel4_Paint(object sender, PaintEventArgs e)
@@ -55,7 +64,7 @@ namespace RISBD
         /// </summary>
         /// <param name="conn">Подключение</param>
         /// <returns>Удалось ли открыть</returns>
-        private bool open_connection(ref NpgsqlConnection conn)
+        static public bool open_connection(ref NpgsqlConnection conn)
         {
             try
             {
@@ -63,7 +72,7 @@ namespace RISBD
             }
             catch (NpgsqlException ex)
             {
-                MessageBox.Show("Ошибка:\n" + ex.ToString(), "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ошибка:\n" + ex.Message, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             return true;
@@ -75,7 +84,7 @@ namespace RISBD
         /// <param name="da">Адаптер</param>
         /// <param name="datasetmain">Датасет</param>
         /// <returns>Удалось ли</returns>
-        private bool fill_dataSet(NpgsqlDataAdapter da, ref DataSet datasetmain, string tableName)
+        static public bool fill_dataSet(NpgsqlDataAdapter da, ref DataSet datasetmain, string tableName, ref NpgsqlConnection conn)
         {
             try
             {
@@ -83,7 +92,8 @@ namespace RISBD
             }
             catch (NpgsqlException ex)
             {
-                MessageBox.Show("Ошибка:\n" + ex.ToString(), "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ошибка:\n" + ex.Message, "Ошибка подключения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                conn.Close();
                 return false;
             }
             return true;
@@ -94,8 +104,6 @@ namespace RISBD
         /// </summary>
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            conn_A = new NpgsqlConnection("server=students.ami.nstu.ru; database=risbd4; user Id=risbd4; password=ris14bd4");
-            conn_B = new NpgsqlConnection("server=localhost; database=postgres; user Id=test; password=test");
             //button_refresh8_Click(null, null);
         }
 
@@ -117,7 +125,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_A)) return;
             dataGrid_results2.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results2.DataMember = "table1";
             conn_A.Close();                                 // Закрываем подключение
@@ -136,7 +144,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_A)) return;
             dataGrid_results3.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results3.DataMember = "table1";
             conn_A.Close();                                 // Закрываем подключение
@@ -155,7 +163,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_A)) return;
             dataGrid_results4.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results4.DataMember = "table1";
             conn_A.Close();                                 // Закрываем подключение
@@ -175,7 +183,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_A)) return;
             dataGrid_results5.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results5.DataMember = "table1";
             conn_A.Close();                                 // Закрываем подключение
@@ -196,7 +204,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_B)) return;
             dataGrid_results6.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results6.DataMember = "table1";
             conn_B.Close();                                 // Закрываем подключение
@@ -215,7 +223,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_B)) return;
             dataGrid_results7.DataSource = datasetmain;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results7.DataMember = "table1";
             conn_B.Close();                                 // Закрываем подключение
@@ -234,7 +242,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_B)) return;
             conn_B.Close();        
             comboBox_clients8.DataSource = datasetmain.Tables["table1"];    // Связываем элемент DataGridView1 с набором данных
             comboBox_clients8.DisplayMember = "info";       // элемент отображения для Комбо
@@ -259,7 +267,7 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref dataSetQuery8, "Orders")) return;
+            if (!fill_dataSet(da, ref dataSetQuery8, "Orders", ref conn_B)) return;
             
             dataGrid_results8.DataSource = dataSetQuery8;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results8.DataMember = "Orders";
@@ -285,12 +293,15 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref dataSetQuery8, "Client")) return;
+            if (!fill_dataSet(da, ref dataSetQuery8, "Client", ref conn_B)) return;
             dataGrid_client8.DataSource = dataSetQuery8;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_client8.DataMember = "Client";
             conn_B.Close();  
         }
 
+        /// <summary>
+        /// Поиск товаров, проданных из выбранной категории
+        /// </summary>
         private void button_search9_Click(object sender, EventArgs e)
         {
             // если категории не подгружены
@@ -306,13 +317,16 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref dataSetQuery9, "Sales")) return;
+            if (!fill_dataSet(da, ref dataSetQuery9, "Sales", ref conn_B)) return;
 
             dataGrid_results9.DataSource = dataSetQuery9;     // Связываем элемент DataGridView1 с набором данных
             dataGrid_results9.DataMember = "Sales";
             conn_B.Close();  
         }
 
+        /// <summary>
+        /// Загрузить данные в список категорий
+        /// </summary>
         private void button_refresh9_Click(object sender, EventArgs e)
         {
             // Создадим новый набор данных
@@ -326,12 +340,26 @@ namespace RISBD
             // Новый адаптер нужен для заполнения набора данных
             NpgsqlDataAdapter da = new NpgsqlDataAdapter(command);
             // Заполняем набор данных данными, которые вернул запрос       
-            if (!fill_dataSet(da, ref datasetmain, "table1")) return;
+            if (!fill_dataSet(da, ref datasetmain, "table1", ref conn_B)) return;
             conn_B.Close();
             comboBox_category9.DataSource = datasetmain.Tables["table1"];    // Связываем элемент DataGridView1 с набором данных
             comboBox_category9.DisplayMember = "category";       // элемент отображения для Комбо
             comboBox_category9.ValueMember = "id";               // возвращаемый Комбо элемент
-            //comboBox_clients8_SelectedIndexChanged(null, null); // появились новые элементы => индекс изменился
+        }
+
+        private void выходToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void категорииToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            formAddCategory.Show();
+        }
+
+        private void клиентыToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            formAddClient.Show();
         }
 
 

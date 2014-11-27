@@ -90,14 +90,23 @@
             this.tabPage8 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel16 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel17 = new System.Windows.Forms.TableLayoutPanel();
-            this.label12 = new System.Windows.Forms.Label();
             this.button_search9 = new System.Windows.Forms.Button();
             this.dateTime_onSaleDate9 = new System.Windows.Forms.DateTimePicker();
-            this.dataGrid_results9 = new System.Windows.Forms.DataGridView();
-            this.label13 = new System.Windows.Forms.Label();
+            this.label12 = new System.Windows.Forms.Label();
             this.comboBox_category9 = new System.Windows.Forms.ComboBox();
+            this.label13 = new System.Windows.Forms.Label();
             this.button_refresh9 = new System.Windows.Forms.Button();
+            this.dataGrid_results9 = new System.Windows.Forms.DataGridView();
             this.button_export_excel9 = new System.Windows.Forms.Button();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.файлToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.выходToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.модификацияДанныхToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.категорииToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.клиентыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.компанииToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.товарыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.продажиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -138,6 +147,7 @@
             this.tableLayoutPanel16.SuspendLayout();
             this.tableLayoutPanel17.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid_results9)).BeginInit();
+            this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -151,10 +161,10 @@
             this.tabControl1.Controls.Add(this.tabPage7);
             this.tabControl1.Controls.Add(this.tabPage8);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl1.Location = new System.Drawing.Point(0, 0);
+            this.tabControl1.Location = new System.Drawing.Point(0, 24);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(767, 478);
+            this.tabControl1.Size = new System.Drawing.Size(767, 454);
             this.tabControl1.TabIndex = 0;
             // 
             // tabPage1
@@ -163,7 +173,7 @@
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(759, 452);
+            this.tabPage1.Size = new System.Drawing.Size(759, 428);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "2) Продажи A";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -180,7 +190,7 @@
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // tableLayoutPanel2
@@ -285,7 +295,7 @@
             this.dataGrid_results2.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results2.Name = "dataGrid_results2";
             this.dataGrid_results2.ReadOnly = true;
-            this.dataGrid_results2.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results2.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results2.TabIndex = 1;
             // 
             // tabPage2
@@ -294,7 +304,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(759, 452);
+            this.tabPage2.Size = new System.Drawing.Size(759, 428);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "3) Фирмы A";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -311,7 +321,7 @@
             this.tableLayoutPanel3.RowCount = 2;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel3.TabIndex = 1;
             // 
             // tableLayoutPanel4
@@ -362,7 +372,7 @@
             this.dataGrid_results3.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results3.Name = "dataGrid_results3";
             this.dataGrid_results3.ReadOnly = true;
-            this.dataGrid_results3.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results3.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results3.TabIndex = 1;
             // 
             // tabPage3
@@ -371,7 +381,7 @@
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(759, 452);
+            this.tabPage3.Size = new System.Drawing.Size(759, 428);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "4) Покупатели А";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -388,7 +398,7 @@
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel5.TabIndex = 1;
             // 
             // tableLayoutPanel6
@@ -438,7 +448,7 @@
             this.dataGrid_results4.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results4.Name = "dataGrid_results4";
             this.dataGrid_results4.ReadOnly = true;
-            this.dataGrid_results4.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results4.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results4.TabIndex = 1;
             // 
             // tabPage4
@@ -447,7 +457,7 @@
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(759, 452);
+            this.tabPage4.Size = new System.Drawing.Size(759, 428);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "5) Категории А";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -464,7 +474,7 @@
             this.tableLayoutPanel7.RowCount = 2;
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel7.TabIndex = 2;
             // 
             // tableLayoutPanel8
@@ -539,7 +549,7 @@
             this.dataGrid_results5.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results5.Name = "dataGrid_results5";
             this.dataGrid_results5.ReadOnly = true;
-            this.dataGrid_results5.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results5.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results5.TabIndex = 1;
             // 
             // tabPage5
@@ -548,7 +558,7 @@
             this.tabPage5.Location = new System.Drawing.Point(4, 22);
             this.tabPage5.Name = "tabPage5";
             this.tabPage5.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage5.Size = new System.Drawing.Size(759, 452);
+            this.tabPage5.Size = new System.Drawing.Size(759, 428);
             this.tabPage5.TabIndex = 4;
             this.tabPage5.Text = "6) Продажи B";
             this.tabPage5.UseVisualStyleBackColor = true;
@@ -565,7 +575,7 @@
             this.tableLayoutPanel9.RowCount = 2;
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel9.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel9.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel9.TabIndex = 1;
             // 
             // tableLayoutPanel10
@@ -670,7 +680,7 @@
             this.dataGrid_results6.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results6.Name = "dataGrid_results6";
             this.dataGrid_results6.ReadOnly = true;
-            this.dataGrid_results6.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results6.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results6.TabIndex = 1;
             // 
             // tabPage6
@@ -679,7 +689,7 @@
             this.tabPage6.Location = new System.Drawing.Point(4, 22);
             this.tabPage6.Name = "tabPage6";
             this.tabPage6.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage6.Size = new System.Drawing.Size(759, 452);
+            this.tabPage6.Size = new System.Drawing.Size(759, 428);
             this.tabPage6.TabIndex = 5;
             this.tabPage6.Text = "7) Директора B";
             this.tabPage6.UseVisualStyleBackColor = true;
@@ -696,7 +706,7 @@
             this.tableLayoutPanel11.RowCount = 2;
             this.tableLayoutPanel11.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel11.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel11.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel11.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel11.TabIndex = 2;
             // 
             // tableLayoutPanel12
@@ -746,7 +756,7 @@
             this.dataGrid_results7.Location = new System.Drawing.Point(3, 38);
             this.dataGrid_results7.Name = "dataGrid_results7";
             this.dataGrid_results7.ReadOnly = true;
-            this.dataGrid_results7.Size = new System.Drawing.Size(747, 405);
+            this.dataGrid_results7.Size = new System.Drawing.Size(747, 381);
             this.dataGrid_results7.TabIndex = 1;
             // 
             // tabPage7
@@ -755,7 +765,7 @@
             this.tabPage7.Location = new System.Drawing.Point(4, 22);
             this.tabPage7.Name = "tabPage7";
             this.tabPage7.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage7.Size = new System.Drawing.Size(759, 452);
+            this.tabPage7.Size = new System.Drawing.Size(759, 428);
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "8) Покупки клиента";
             this.tabPage7.UseVisualStyleBackColor = true;
@@ -778,7 +788,7 @@
             this.tableLayoutPanel13.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel13.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel13.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
-            this.tableLayoutPanel13.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel13.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel13.TabIndex = 2;
             // 
             // tableLayoutPanel14
@@ -787,7 +797,7 @@
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 22.66402F));
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 77.33598F));
             this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 105F));
-            this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
+            this.tableLayoutPanel14.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 141F));
             this.tableLayoutPanel14.Controls.Add(this.label9, 0, 0);
             this.tableLayoutPanel14.Controls.Add(this.comboBox_clients8, 1, 0);
             this.tableLayoutPanel14.Controls.Add(this.button_refresh8, 2, 0);
@@ -816,13 +826,13 @@
             this.comboBox_clients8.FormattingEnabled = true;
             this.comboBox_clients8.Location = new System.Drawing.Point(116, 3);
             this.comboBox_clients8.Name = "comboBox_clients8";
-            this.comboBox_clients8.Size = new System.Drawing.Size(382, 21);
+            this.comboBox_clients8.Size = new System.Drawing.Size(381, 21);
             this.comboBox_clients8.TabIndex = 7;
             this.comboBox_clients8.SelectedIndexChanged += new System.EventHandler(this.comboBox_clients8_SelectedIndexChanged);
             // 
             // button_refresh8
             // 
-            this.button_refresh8.Location = new System.Drawing.Point(504, 3);
+            this.button_refresh8.Location = new System.Drawing.Point(503, 3);
             this.button_refresh8.Name = "button_refresh8";
             this.button_refresh8.Size = new System.Drawing.Size(69, 23);
             this.button_refresh8.TabIndex = 8;
@@ -852,7 +862,7 @@
             this.dataGrid_results8.Location = new System.Drawing.Point(3, 173);
             this.dataGrid_results8.Name = "dataGrid_results8";
             this.dataGrid_results8.ReadOnly = true;
-            this.dataGrid_results8.Size = new System.Drawing.Size(747, 235);
+            this.dataGrid_results8.Size = new System.Drawing.Size(747, 211);
             this.dataGrid_results8.TabIndex = 2;
             // 
             // tableLayoutPanel15
@@ -923,7 +933,7 @@
             // 
             // button_export_word8
             // 
-            this.button_export_word8.Location = new System.Drawing.Point(3, 414);
+            this.button_export_word8.Location = new System.Drawing.Point(3, 390);
             this.button_export_word8.Name = "button_export_word8";
             this.button_export_word8.Size = new System.Drawing.Size(156, 23);
             this.button_export_word8.TabIndex = 4;
@@ -936,7 +946,7 @@
             this.tabPage8.Location = new System.Drawing.Point(4, 22);
             this.tabPage8.Name = "tabPage8";
             this.tabPage8.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage8.Size = new System.Drawing.Size(759, 452);
+            this.tabPage8.Size = new System.Drawing.Size(759, 428);
             this.tabPage8.TabIndex = 7;
             this.tabPage8.Text = "9) Продажи из категории";
             this.tabPage8.UseVisualStyleBackColor = true;
@@ -955,7 +965,7 @@
             this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
-            this.tableLayoutPanel16.Size = new System.Drawing.Size(753, 446);
+            this.tableLayoutPanel16.Size = new System.Drawing.Size(753, 422);
             this.tableLayoutPanel16.TabIndex = 1;
             // 
             // tableLayoutPanel17
@@ -966,7 +976,7 @@
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 109F));
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 170F));
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 132F));
-            this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 97F));
+            this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 98F));
             this.tableLayoutPanel17.Controls.Add(this.button_search9, 5, 0);
             this.tableLayoutPanel17.Controls.Add(this.dateTime_onSaleDate9, 4, 0);
             this.tableLayoutPanel17.Controls.Add(this.label12, 3, 0);
@@ -980,15 +990,6 @@
             this.tableLayoutPanel17.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel17.Size = new System.Drawing.Size(747, 29);
             this.tableLayoutPanel17.TabIndex = 0;
-            // 
-            // label12
-            // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(350, 0);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(33, 13);
-            this.label12.TabIndex = 0;
-            this.label12.Text = "Дата";
             // 
             // button_search9
             // 
@@ -1007,17 +1008,22 @@
             this.dateTime_onSaleDate9.Size = new System.Drawing.Size(126, 20);
             this.dateTime_onSaleDate9.TabIndex = 5;
             // 
-            // dataGrid_results9
+            // label12
             // 
-            this.dataGrid_results9.AllowUserToAddRows = false;
-            this.dataGrid_results9.AllowUserToDeleteRows = false;
-            this.dataGrid_results9.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGrid_results9.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGrid_results9.Location = new System.Drawing.Point(3, 38);
-            this.dataGrid_results9.Name = "dataGrid_results9";
-            this.dataGrid_results9.ReadOnly = true;
-            this.dataGrid_results9.Size = new System.Drawing.Size(747, 370);
-            this.dataGrid_results9.TabIndex = 1;
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(350, 0);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(33, 13);
+            this.label12.TabIndex = 0;
+            this.label12.Text = "Дата";
+            // 
+            // comboBox_category9
+            // 
+            this.comboBox_category9.FormattingEnabled = true;
+            this.comboBox_category9.Location = new System.Drawing.Point(241, 3);
+            this.comboBox_category9.Name = "comboBox_category9";
+            this.comboBox_category9.Size = new System.Drawing.Size(102, 21);
+            this.comboBox_category9.TabIndex = 7;
             // 
             // label13
             // 
@@ -1027,14 +1033,6 @@
             this.label13.Size = new System.Drawing.Size(60, 13);
             this.label13.TabIndex = 6;
             this.label13.Text = "Категория";
-            // 
-            // comboBox_category9
-            // 
-            this.comboBox_category9.FormattingEnabled = true;
-            this.comboBox_category9.Location = new System.Drawing.Point(241, 3);
-            this.comboBox_category9.Name = "comboBox_category9";
-            this.comboBox_category9.Size = new System.Drawing.Size(102, 21);
-            this.comboBox_category9.TabIndex = 7;
             // 
             // button_refresh9
             // 
@@ -1046,14 +1044,96 @@
             this.button_refresh9.UseVisualStyleBackColor = true;
             this.button_refresh9.Click += new System.EventHandler(this.button_refresh9_Click);
             // 
+            // dataGrid_results9
+            // 
+            this.dataGrid_results9.AllowUserToAddRows = false;
+            this.dataGrid_results9.AllowUserToDeleteRows = false;
+            this.dataGrid_results9.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGrid_results9.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGrid_results9.Location = new System.Drawing.Point(3, 38);
+            this.dataGrid_results9.Name = "dataGrid_results9";
+            this.dataGrid_results9.ReadOnly = true;
+            this.dataGrid_results9.Size = new System.Drawing.Size(747, 346);
+            this.dataGrid_results9.TabIndex = 1;
+            // 
             // button_export_excel9
             // 
-            this.button_export_excel9.Location = new System.Drawing.Point(3, 414);
+            this.button_export_excel9.Location = new System.Drawing.Point(3, 390);
             this.button_export_excel9.Name = "button_export_excel9";
             this.button_export_excel9.Size = new System.Drawing.Size(137, 23);
             this.button_export_excel9.TabIndex = 2;
             this.button_export_excel9.Text = "Экспорт в Excel";
             this.button_export_excel9.UseVisualStyleBackColor = true;
+            // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.файлToolStripMenuItem,
+            this.модификацияДанныхToolStripMenuItem});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(767, 24);
+            this.menuStrip1.TabIndex = 1;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // файлToolStripMenuItem
+            // 
+            this.файлToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.выходToolStripMenuItem});
+            this.файлToolStripMenuItem.Name = "файлToolStripMenuItem";
+            this.файлToolStripMenuItem.Size = new System.Drawing.Size(48, 20);
+            this.файлToolStripMenuItem.Text = "Файл";
+            // 
+            // выходToolStripMenuItem
+            // 
+            this.выходToolStripMenuItem.Name = "выходToolStripMenuItem";
+            this.выходToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.выходToolStripMenuItem.Text = "Выход";
+            this.выходToolStripMenuItem.Click += new System.EventHandler(this.выходToolStripMenuItem_Click);
+            // 
+            // модификацияДанныхToolStripMenuItem
+            // 
+            this.модификацияДанныхToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.категорииToolStripMenuItem,
+            this.клиентыToolStripMenuItem,
+            this.компанииToolStripMenuItem,
+            this.товарыToolStripMenuItem,
+            this.продажиToolStripMenuItem});
+            this.модификацияДанныхToolStripMenuItem.Name = "модификацияДанныхToolStripMenuItem";
+            this.модификацияДанныхToolStripMenuItem.Size = new System.Drawing.Size(141, 20);
+            this.модификацияДанныхToolStripMenuItem.Text = "Модификация данных";
+            // 
+            // категорииToolStripMenuItem
+            // 
+            this.категорииToolStripMenuItem.Name = "категорииToolStripMenuItem";
+            this.категорииToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.категорииToolStripMenuItem.Text = "Категории";
+            this.категорииToolStripMenuItem.Click += new System.EventHandler(this.категорииToolStripMenuItem_Click);
+            // 
+            // клиентыToolStripMenuItem
+            // 
+            this.клиентыToolStripMenuItem.Name = "клиентыToolStripMenuItem";
+            this.клиентыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.клиентыToolStripMenuItem.Text = "Клиенты";
+            this.клиентыToolStripMenuItem.Click += new System.EventHandler(this.клиентыToolStripMenuItem_Click);
+            // 
+            // компанииToolStripMenuItem
+            // 
+            this.компанииToolStripMenuItem.Name = "компанииToolStripMenuItem";
+            this.компанииToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.компанииToolStripMenuItem.Text = "Компании";
+            // 
+            // товарыToolStripMenuItem
+            // 
+            this.товарыToolStripMenuItem.Name = "товарыToolStripMenuItem";
+            this.товарыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.товарыToolStripMenuItem.Text = "Товары";
+            // 
+            // продажиToolStripMenuItem
+            // 
+            this.продажиToolStripMenuItem.Name = "продажиToolStripMenuItem";
+            this.продажиToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.продажиToolStripMenuItem.Text = "Продажи";
             // 
             // MainWindow
             // 
@@ -1061,6 +1141,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(767, 478);
             this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.menuStrip1);
+            this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainWindow";
             this.Text = "РИСБД";
             this.Load += new System.EventHandler(this.MainWindow_Load);
@@ -1113,7 +1195,10 @@
             this.tableLayoutPanel17.ResumeLayout(false);
             this.tableLayoutPanel17.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid_results9)).EndInit();
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -1189,6 +1274,15 @@
         private System.Windows.Forms.ComboBox comboBox_category9;
         private System.Windows.Forms.Button button_refresh9;
         private System.Windows.Forms.Button button_export_excel9;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem файлToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem выходToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem модификацияДанныхToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem категорииToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem клиентыToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem компанииToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem товарыToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem продажиToolStripMenuItem;
     }
 }
 

@@ -21,12 +21,10 @@ BEGIN
 	insert into categories(id, title)
 		values(new_id, _title);
 	-- insert into table on A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
-		select * from 
-		initial.insert_categories_A(' || new_id ||  ', '' ' || _title || ' '');
-	');
-	RETURN;
+		select * from initial.insert_categories_A(' || new_id ||  ', ''' || _title || ''');
+	') as T1(test text);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -81,14 +79,14 @@ BEGIN
 	set search_path to initial;
 	-- update table on B
 	update categories
-	set categories.title = _title
+	set title = _title
 	where categories.id = _id;
 	-- update table on A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
 		select * from
-		initial.update_categories_A(' || _id ||  ', '' ' || _title || ' '');
-	');
+		initial.update_categories_A(' || _id ||  ', ''' || _title || ''');
+	') as T1(test text);
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
@@ -102,11 +100,12 @@ BEGIN
 	set search_path to initial;
 	-- update table on A
 	update categories
-	set categories.title = _title
+	set title = _title
 	where categories.id = _id;
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 
@@ -128,14 +127,15 @@ BEGIN
 	delete from categories
 	where categories.id = _id;
 	-- delete from table on A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
 		select * from
 		initial.delete_categories_A(' || _id ||  ');
-	');
+	') as T(info text);
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 -- A --
@@ -148,6 +148,8 @@ BEGIN
 	-- delete from table on A
 	delete from categories
 	where categories.id = _id;
+	delete from ñategories_month_sum_sale_amount_cash
+	where ñategories_month_sum_sale_amount_cash.category_id = _id;
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
