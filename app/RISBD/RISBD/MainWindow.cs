@@ -12,6 +12,8 @@ using Npgsql;
 using Word = Microsoft.Office.Interop.Word;
 using Excel = Microsoft.Office.Interop.Excel;
 
+using System.Runtime.InteropServices;
+
 namespace RISBD
 {
     /// <summary>
@@ -27,6 +29,11 @@ namespace RISBD
         AddCategory formAddCategory;  // форма манипуляций с категориями
         AddClient formAddClient;      // форма манипуляций с клиентами
         AddCompany formAddCompany;    // форма манипуляций с компаниями
+
+        // подключение библиотеки
+        [DllImport("lib.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "check12")]
+        // проверка, лежит ли число в диапазоне 1-12
+        public static extern int check12(int t);
 
         /// <summary>
         /// конструктор
@@ -122,6 +129,9 @@ namespace RISBD
         /// </summary>
         private void button_search2_Click(object sender, EventArgs e)
         {
+            // проверка на то, что месяц лежит в 1-12
+            //if (check12(Convert.ToInt32(numeric_month2.Value)) == 0)
+                //return;
             // Создадим новый набор данных
             DataSet datasetmain = new DataSet();
             // Открываем подключение
@@ -411,7 +421,7 @@ namespace RISBD
             wordapp.Selection.Font.Size = 16;
             wordapp.Selection.Font.Bold = 1;
             //Выводим заголовок
-            wordapp.Selection.TypeText("Список Совершенных сделок от " + from.ToString() + " до " + to.ToString());
+            wordapp.Selection.TypeText("Список Совершенных сделок от " + from.ToShortDateString() + " до " + to.ToShortDateString());
             //Вставляем параграф
             wordapp.Selection.InsertParagraph();
             //Переходим в конец документа
@@ -420,18 +430,18 @@ namespace RISBD
             wordapp.Selection.Font.Size = 12;
             wordapp.Selection.Font.Bold = 0;
             //Добавляем текст
-            wordapp.Selection.TypeText("Уважаемый %USERNAME%!\n\rС глубочайшим уважением сообщаем, что для клиента");
+            wordapp.Selection.TypeText("Уважаемый " + dataSetQuery.Tables[0].Rows[0][2].ToString() + " " + dataSetQuery.Tables[0].Rows[0][3].ToString() + "!\n\rС глубочайшим уважением сообщаем, что для клиента");
             //Параграф
             wordapp.Selection.InsertParagraph();
             //Создаём таблицу из 3 столбцов с одной строкой, с автоматической подгонкой ширины столбцов под размер данных
             Word.Table wordtable = doc.Tables.Add(Range: wordapp.Selection.Range, NumColumns: 3, NumRows: 1, DefaultTableBehavior: Word.WdDefaultTableBehavior.wdWord9TableBehavior, AutoFitBehavior: Word.WdAutoFitBehavior.wdAutoFitContent);
             //Вставляем данные
             //ID
-            wordtable.Cell(1, 1).Range.Text = "User: " + dataSetQuery.Tables[0].Rows[0][0].ToString();
+            wordtable.Cell(1, 1).Range.Text = "ID " + dataSetQuery.Tables[0].Rows[0][0].ToString();
             //ФИО
-            wordtable.Cell(1, 2).Range.Text = dataSetQuery.Tables[0].Rows[0][1].ToString() + dataSetQuery.Tables[0].Rows[0][2].ToString() + dataSetQuery.Tables[0].Rows[0][3].ToString();
+            wordtable.Cell(1, 2).Range.Text = dataSetQuery.Tables[0].Rows[0][1].ToString() + " " + dataSetQuery.Tables[0].Rows[0][2].ToString() + " " + dataSetQuery.Tables[0].Rows[0][3].ToString();
             //Дата рождения
-            wordtable.Cell(1, 3).Range.Text = dataSetQuery.Tables[0].Rows[0][4].ToString();
+            wordtable.Cell(1, 3).Range.Text = Convert.ToDateTime(dataSetQuery.Tables[0].Rows[0][4]).ToShortDateString();
             //Перемещаем выделение в конец документа
             wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
             //Снова параграф
@@ -449,14 +459,14 @@ namespace RISBD
             wordtable.Cell(1, 2).Range.Text = "Категория";
             wordtable.Cell(1, 3).Range.Text = "Компания";
             wordtable.Cell(1, 4).Range.Text = "Модель";
-            wordtable.Cell(1, 5).Range.Text = "Колличество";
+            wordtable.Cell(1, 5).Range.Text = "Количество";
             wordtable.Cell(1, 6).Range.Text = "Метод оплаты";
             //Со второй строки
             int i = 2;
             //Вставляем данные
             foreach (DataRow row in dataSetQuery.Tables[1].Rows)
             {
-                wordtable.Cell(i, 1).Range.Text = row[0].ToString();
+                wordtable.Cell(i, 1).Range.Text = Convert.ToDateTime(row[0]).ToShortDateString();
                 wordtable.Cell(i, 2).Range.Text = row[1].ToString();
                 wordtable.Cell(i, 3).Range.Text = row[2].ToString();
                 wordtable.Cell(i, 4).Range.Text = row[3].ToString();
@@ -464,6 +474,7 @@ namespace RISBD
                 wordtable.Cell(i, 6).Range.Text = row[5].ToString();
                 ++i;
             }
+            //i = check12(i);
             //Пробуем сохранить на диске
             try
             {
@@ -472,100 +483,15 @@ namespace RISBD
             catch (Exception) { };
         }
         //private void ExportExcel()
-        private void ExportExcel(DataSet salesData)
-        {
-            //Если не было получено данных, выходим
-            if (salesData.Tables.Count < 1)
-                return;
-            //Создаём экземпляр приложения
-            Excel.Application app = new Excel.Application();
-            //Отображаем его окно
-            app.Visible = true;
-            //Устанавливаем число страниц в новых книгах
-            app.SheetsInNewWorkbook = 1;
-            //Создаём книгу
-            Excel.Workbook book = app.Workbooks.Add();
-            //Получаем первую страницу книги
-            Excel.Worksheet sheet = book.Worksheets.get_Item(1);
-            //Переименовываем страницу
-            sheet.Name = "Результат";
-            //Выбираем первые 9 столбцов первой строки
-            Excel.Range cells = sheet.get_Range("A1", "I1");
-            //Объединяем ячейки
-            cells.Merge();
-            //Задаем выравнивание по центру
-            cells.HorizontalAlignment = Excel.Constants.xlCenter;
-            //Выводим Заголовок
-            cells.Value2 = "Таблица результатов с умопомрачительным оформлением";
-            //Выбираем первые 9 столбцов второй строки, повторяем действия
-            cells = sheet.get_Range("A2", "I2");
-            cells.Merge();
-            cells.HorizontalAlignment = Excel.Constants.xlCenter;
-            //Устанавливаем цвет в 47 предустановленное значение
-            cells.Font.ColorIndex = 47;
-            //Выводим саркастический подзаголовок
-            cells.Value2 = "(в моих мечтах)";
-            //Выбираем первые 9 столбцов второй строки
-            cells = sheet.get_Range("A3", "I3");
-            //Устанавливаем цвет границ в чёрный цвет
-            cells.Borders.ColorIndex = 1;
-            //Тип - неприрывные
-            cells.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-            //Толщина - широкие
-            cells.Borders.Weight = Excel.XlBorderWeight.xlThick;
-            //Вводим имена столбцов
-            sheet.get_Range("A3").Value2 = "Компания";
-            sheet.get_Range("B3").Value2 = "Модель";
-            sheet.get_Range("C3").Value2 = "Число сделок";
-            sheet.get_Range("D3").Value2 = "Метод оплаты";
-            sheet.get_Range("E3").Value2 = "Тип сделки";
-            sheet.get_Range("F3").Value2 = "Фамилия";
-            sheet.get_Range("G3").Value2 = "Имя";
-            sheet.get_Range("H3").Value2 = "Отчество";
-            sheet.get_Range("I3").Value2 = "Дата рождения";
-
-            //Устанавливаем выделение в первую строку данных
-            cells = sheet.get_Range("A4");
-            //Для каждой строки таблицы
-            foreach (DataRow row in salesData.Tables[0].Rows)
-            {
-                //Выводим данные с учётом смещения
-                cells.get_Offset(0, 0).Value2 = row[0].ToString();
-                cells.get_Offset(0, 1).Value2 = row[1].ToString();
-                cells.get_Offset(0, 2).Value2 = row[2].ToString();
-                cells.get_Offset(0, 3).Value2 = row[3].ToString();
-                cells.get_Offset(0, 4).Value2 = row[4].ToString();
-                cells.get_Offset(0, 5).Value2 = row[5].ToString();
-                cells.get_Offset(0, 6).Value2 = row[6].ToString();
-                cells.get_Offset(0, 7).Value2 = row[7].ToString();
-                cells.get_Offset(0, 8).Value2 = row[8].ToString();
-                //Смещаем выделение на строку ниже
-                cells = cells.get_Offset(1, 0);
-            }
-            //Выделяем заголовок
-            cells = sheet.get_Range("A3", "I3");
-            //Изменяем ширину выделенных столбцов
-            cells.ColumnWidth = 16;
-            //Выделяем все данные, обрамляем тонкой рамкой
-            cells = sheet.get_Range(sheet.get_Range("A4", "I4"), cells.get_Offset(salesData.Tables[0].Rows.Count, 0));
-            cells.Borders.ColorIndex = 1;
-            cells.Borders.Weight = Excel.XlBorderWeight.xlThin;
-
-            try
-            {
-                //Вызываем диалог сохранения
-                book.SaveAs();
-            }   //ОСТОРОЖНО!!!
-            //Он любит бросать исключения
-            catch (Exception) { };
-        }
 
         private void button_export_excel9_Click(object sender, EventArgs e)
         {
-            ExportExcel(ref dataSetQuery9);
+            if (comboBox_category9.SelectedIndex == -1)
+                return;
+            ExportExcel(ref dataSetQuery9, comboBox_category9.Text, dateTime_onSaleDate9.Value);
         }
 
-        static private void ExportExcel(ref DataSet salesData)
+        private void ExportExcel(ref DataSet salesData, String category, DateTime date)
         {
             //Если не было получено данных, выходим
             if (salesData.Tables.Count < 1)
@@ -589,7 +515,7 @@ namespace RISBD
             //Задаем выравнивание по центру
             cells.HorizontalAlignment = Excel.Constants.xlCenter;
             //Выводим Заголовок
-            cells.Value2 = "Таблица результатов с умопомрачительным оформлением";
+            cells.Value2 = "Таблица результатов для категории " + category + " за " + date.Date.ToShortDateString() + " с умопомрачительным оформлением";
             //Выбираем первые 9 столбцов второй строки, повторяем действия
             cells = sheet.get_Range("A2", "I2");
             cells.Merge();
@@ -631,7 +557,7 @@ namespace RISBD
                 cells.get_Offset(0, 5).Value2 = row[5].ToString();
                 cells.get_Offset(0, 6).Value2 = row[6].ToString();
                 cells.get_Offset(0, 7).Value2 = row[7].ToString();
-                cells.get_Offset(0, 8).Value2 = row[8].ToString();
+                cells.get_Offset(0, 8).Value2 = Convert.ToDateTime(row[8]).ToShortDateString();
                 //Смещаем выделение на строку ниже
                 cells = cells.get_Offset(1, 0);
             }
