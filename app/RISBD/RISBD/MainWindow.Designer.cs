@@ -106,7 +106,6 @@
             this.клиентыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.компанииToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.товарыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.продажиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -1099,8 +1098,7 @@
             this.категорииToolStripMenuItem,
             this.клиентыToolStripMenuItem,
             this.компанииToolStripMenuItem,
-            this.товарыToolStripMenuItem,
-            this.продажиToolStripMenuItem});
+            this.товарыToolStripMenuItem});
             this.модификацияДанныхToolStripMenuItem.Name = "модификацияДанныхToolStripMenuItem";
             this.модификацияДанныхToolStripMenuItem.Size = new System.Drawing.Size(141, 20);
             this.модификацияДанныхToolStripMenuItem.Text = "Модификация данных";
@@ -1132,12 +1130,6 @@
             this.товарыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.товарыToolStripMenuItem.Text = "Товары";
             this.товарыToolStripMenuItem.Click += new System.EventHandler(this.товарыToolStripMenuItem_Click);
-            // 
-            // продажиToolStripMenuItem
-            // 
-            this.продажиToolStripMenuItem.Name = "продажиToolStripMenuItem";
-            this.продажиToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
-            this.продажиToolStripMenuItem.Text = "Продажи";
             // 
             // MainWindow
             // 
@@ -1286,7 +1278,6 @@
         private System.Windows.Forms.ToolStripMenuItem клиентыToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem компанииToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem товарыToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem продажиToolStripMenuItem;
     }
 }
 

@@ -49,7 +49,7 @@ namespace RISBD
             dataSetQuery8.Clear();
             dataSetQuery9.Clear();
             // задаим строки подключения
-            conn_A = new NpgsqlConnection("server=students.ami.nstu.ru; database=risbd4; user Id=risbd4; password=ris14bd4");
+            conn_A = new NpgsqlConnection("server=students.ami.nstu.ru; database=risbd4; user Id=risbd4_ext; password=ris14bd4_ext");
             conn_B = new NpgsqlConnection("server=localhost; database=postgres; user Id=test; password=test");
             formAddCategory = new AddCategory(conn_B);
             formAddClient = new AddClient(conn_A, conn_B);
@@ -578,7 +578,7 @@ namespace RISBD
             try
             {
                 //Вызываем диалог сохранения
-                book.SaveAs();
+                book.Save();
             }   //ОСТОРОЖНО!!!
             //Он любит бросать исключения
             catch (Exception) { };
