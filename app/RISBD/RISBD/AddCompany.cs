@@ -37,6 +37,8 @@ namespace RISBD
             DataSet datasetmain = new DataSet();
             NpgsqlCommand command;
             NpgsqlDataAdapter da;
+            // очистим таблицу компаний, если она есть
+            try { datasetmain.Tables["companies"].Clear(); } catch (Exception) { }
             // СТРАНЫ (если кнопка нажимается физически, а не вызывается другой функцией)
             if (e != null) 
             { 
@@ -152,7 +154,7 @@ namespace RISBD
             // проверка, что компания была выбрана
             if (dataGrid_results.SelectedRows.Count < 1)
             {
-                MessageBox.Show("Выберите категорию для изменения", "Ошибка изменения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите компанию для изменения", "Ошибка изменения", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             // получим id компании

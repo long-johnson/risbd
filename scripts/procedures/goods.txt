@@ -24,11 +24,11 @@ BEGIN
 		values(new_id, _category_id, _company_id, _model, _price, _description);
 	
 	-- insert into table A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
 		select * from 
-		initial.insert_goods_A(' || new_id || ' , ' || _category_id || ' , ' || _company_id || ' ,'' ' || _model || ' '', ' || _price  || ' , '' ' ||  _description  || ' '');
-	');
+		initial.insert_goods_A(' || new_id || ' , ' || _category_id || ' , ' || _company_id || ' ,''' || _model || ''', ' || _price  || ' , ''' ||  _description  || ''');
+	') as T(info text);
 	
 	RETURN;
 END;
@@ -67,7 +67,7 @@ $$ LANGUAGE plpgsql;
 -- update --
 ------------
 
--- B --
+-- B -- 
 
 drop function if exists initial.update_goods_B(integer, integer, integer, text, numeric, text);
 CREATE OR REPLACE FUNCTION initial.update_goods_B(_id integer, _category_id integer, _company_id integer, _model text, _price numeric(12,2), _description text) 
@@ -77,16 +77,16 @@ BEGIN
 	
 	-- update table B
 	update goods
-	set goods.category_id = _category_id, goods.company_id = _company_id, 
-		goods.model = _model, goods.price = _price, goods.description = _description
+	set category_id = _category_id, company_id = _company_id, 
+		model = _model, price = _price, description = _description
 	where goods.id = _id;
 	
 	-- update table A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
 		select * from 
-		initial.update_goods_A(' || _id || ' , ' || _category_id || ' , ' || _company_id || ' ,'' ' || _model || ' '', ' || _price  || ' , '' ' ||  _description  || ' '');
-	');
+		initial.update_goods_A(' || _id || ' , ' || _category_id || ' , ' || _company_id || ' ,''' || _model || ''', ' || _price  || ' , ''' ||  _description  || ''');
+	') as T(info text);
 	
 	RETURN;
 END;
@@ -102,8 +102,8 @@ BEGIN
 	
 	-- update table A
 	update goods
-	set goods.category_id = _category_id, goods.company_id = _company_id, 
-		goods.model = _model, goods.price = _price, goods.description = _description
+	set category_id = _category_id, company_id = _company_id, 
+		model = _model, price = _price, description = _description
 	where goods.id = _id;
 	
 	RETURN;
@@ -162,15 +162,16 @@ BEGIN
 	where goods.id = _id;
 	
 	-- delete from table A
-	public.dblink_exec('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
+	perform * from public.dblink('host=students.ami.nstu.ru dbname=risbd4 user=risbd4 password=ris14bd4',
 	'
 		select * from
 		initial.delete_goods_A(' || _id || ');
-	');
+	') as T(info text);
 	
 	RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 

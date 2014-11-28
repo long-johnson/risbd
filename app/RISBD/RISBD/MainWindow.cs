@@ -29,6 +29,7 @@ namespace RISBD
         AddCategory formAddCategory;  // форма манипуляций с категориями
         AddClient formAddClient;      // форма манипуляций с клиентами
         AddCompany formAddCompany;    // форма манипуляций с компаниями
+        AddGoods formAddGoods;        // форма для товаров
 
         // подключение библиотеки
         [DllImport("lib.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "check12")]
@@ -53,6 +54,7 @@ namespace RISBD
             formAddCategory = new AddCategory(conn_B);
             formAddClient = new AddClient(conn_A, conn_B);
             formAddCompany = new AddCompany(conn_A, conn_B);
+            formAddGoods = new AddGoods(conn_A, conn_B);
            // formAddCategory.Show();
         }
 
@@ -137,7 +139,10 @@ namespace RISBD
             // Открываем подключение
             if (!open_connection(ref conn_A)) return;
             // Очищаем набор данных
-            datasetmain.Clear();                                                                                                
+            datasetmain.Clear();
+            // проверим, что месяц в диапазоне 1-12
+            if (check12(Convert.ToInt32(this.numeric_month2.Value)) == 0)
+                return;                                 
             // Sql-запрос, параметризованный
             NpgsqlCommand command = new NpgsqlCommand("select * from initial.select_2(:month_num, :price_to_search)", conn_A);
             command.Parameters.Add(new NpgsqlParameter("month_num", this.numeric_month2.Value));                                
@@ -577,6 +582,11 @@ namespace RISBD
             }   //ОСТОРОЖНО!!!
             //Он любит бросать исключения
             catch (Exception) { };
+        }
+
+        private void товарыToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            formAddGoods.Show();
         }
 
     }

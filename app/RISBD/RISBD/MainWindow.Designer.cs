@@ -1129,8 +1129,9 @@
             // товарыToolStripMenuItem
             // 
             this.товарыToolStripMenuItem.Name = "товарыToolStripMenuItem";
-            this.товарыToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
+            this.товарыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.товарыToolStripMenuItem.Text = "Товары";
+            this.товарыToolStripMenuItem.Click += new System.EventHandler(this.товарыToolStripMenuItem_Click);
             // 
             // продажиToolStripMenuItem
             // 
