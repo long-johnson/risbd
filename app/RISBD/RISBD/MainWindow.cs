@@ -8,6 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Npgsql;
+/// Ссылки на классы работы с Word и Excel документами
+using Word = Microsoft.Office.Interop.Word;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace RISBD
 {
@@ -374,6 +377,281 @@ namespace RISBD
             formAddCompany.Show();
         }
 
+        /// <summary>
+        /// Экспорт документа в Ворд документ
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button_export_word8_Click(object sender, EventArgs e)
+        {
+            ExportWord(ref dataSetQuery8, dateTime_from8.Value, dateTime_to8.Value);
+        }
+
+        static private void ExportWord(ref DataSet dataSetQuery, DateTime from, DateTime to)
+        {
+            //Если данных получено не было или если их недостаточно, выходим
+            if (dataSetQuery.Tables.Count < 2 || dataSetQuery.Tables[0].Rows.Count < 1)
+                return;
+            //Создаём экземпляр приложения
+            Word.Application wordapp = new Word.Application();
+            //Делаем его видимым
+            //Если не хотим отображать окно, можно закомментировать
+            //Тогда появится только диалог сохранения
+            wordapp.Visible = true;
+            //Создаём видимый пустой документ
+            Word.Document doc = wordapp.Documents.Add(DocumentType: Word.WdNewDocumentType.wdNewBlankDocument, Visible: true);
+            //Активируем его редактирование
+            doc.Activate();
+            //Изменяем ширину левого и правого полей
+            doc.Content.ParagraphFormat.LeftIndent = doc.Content.Application.CentimetersToPoints((float)-2);
+            doc.Content.ParagraphFormat.RightIndent = doc.Content.Application.CentimetersToPoints((float)1);
+            //переходим в конец данных
+            wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
+            //Изменяем размер и жирность шрифта
+            wordapp.Selection.Font.Size = 16;
+            wordapp.Selection.Font.Bold = 1;
+            //Выводим заголовок
+            wordapp.Selection.TypeText("Список Совершенных сделок от " + from.ToString() + " до " + to.ToString());
+            //Вставляем параграф
+            wordapp.Selection.InsertParagraph();
+            //Переходим в конец документа
+            wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
+            //Уменьшаем шрифт и выключаем жирность
+            wordapp.Selection.Font.Size = 12;
+            wordapp.Selection.Font.Bold = 0;
+            //Добавляем текст
+            wordapp.Selection.TypeText("Уважаемый %USERNAME%!\n\rС глубочайшим уважением сообщаем, что для клиента");
+            //Параграф
+            wordapp.Selection.InsertParagraph();
+            //Создаём таблицу из 3 столбцов с одной строкой, с автоматической подгонкой ширины столбцов под размер данных
+            Word.Table wordtable = doc.Tables.Add(Range: wordapp.Selection.Range, NumColumns: 3, NumRows: 1, DefaultTableBehavior: Word.WdDefaultTableBehavior.wdWord9TableBehavior, AutoFitBehavior: Word.WdAutoFitBehavior.wdAutoFitContent);
+            //Вставляем данные
+            //ID
+            wordtable.Cell(1, 1).Range.Text = "User: " + dataSetQuery.Tables[0].Rows[0][0].ToString();
+            //ФИО
+            wordtable.Cell(1, 2).Range.Text = dataSetQuery.Tables[0].Rows[0][1].ToString() + dataSetQuery.Tables[0].Rows[0][2].ToString() + dataSetQuery.Tables[0].Rows[0][3].ToString();
+            //Дата рождения
+            wordtable.Cell(1, 3).Range.Text = dataSetQuery.Tables[0].Rows[0][4].ToString();
+            //Перемещаем выделение в конец документа
+            wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
+            //Снова параграф
+            wordapp.Selection.InsertParagraphAfter();
+            //Перемещаем выделение в конец документа
+            wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
+            //Добавляем текст
+            wordapp.Selection.TypeText(" были совершены следующие сделки в числе " + dataSetQuery.Tables[0].Rows.Count + " единиц\n");
+            wordapp.Selection.InsertParagraph();
+            wordapp.Selection.EndKey(Unit: Word.WdUnits.wdStory, Extend: Word.WdMovementType.wdMove);
+            //Добавляем таблицу о шести столбцах
+            wordtable = doc.Tables.Add(Range: wordapp.Selection.Range, NumColumns: 6, NumRows: dataSetQuery.Tables[1].Rows.Count + 1, DefaultTableBehavior: Word.WdDefaultTableBehavior.wdWord9TableBehavior, AutoFitBehavior: Word.WdAutoFitBehavior.wdAutoFitContent);
+            //Вставляем заголовки
+            wordtable.Cell(1, 1).Range.Text = "Дата сделки";
+            wordtable.Cell(1, 2).Range.Text = "Категория";
+            wordtable.Cell(1, 3).Range.Text = "Компания";
+            wordtable.Cell(1, 4).Range.Text = "Модель";
+            wordtable.Cell(1, 5).Range.Text = "Колличество";
+            wordtable.Cell(1, 6).Range.Text = "Метод оплаты";
+            //Со второй строки
+            int i = 2;
+            //Вставляем данные
+            foreach (DataRow row in dataSetQuery.Tables[1].Rows)
+            {
+                wordtable.Cell(i, 1).Range.Text = row[0].ToString();
+                wordtable.Cell(i, 2).Range.Text = row[1].ToString();
+                wordtable.Cell(i, 3).Range.Text = row[2].ToString();
+                wordtable.Cell(i, 4).Range.Text = row[3].ToString();
+                wordtable.Cell(i, 5).Range.Text = row[4].ToString();
+                wordtable.Cell(i, 6).Range.Text = row[5].ToString();
+                ++i;
+            }
+            //Пробуем сохранить на диске
+            try
+            {
+                doc.Save();
+            }
+            catch (Exception) { };
+        }
+        //private void ExportExcel()
+        private void ExportExcel(DataSet salesData)
+        {
+            //Если не было получено данных, выходим
+            if (salesData.Tables.Count < 1)
+                return;
+            //Создаём экземпляр приложения
+            Excel.Application app = new Excel.Application();
+            //Отображаем его окно
+            app.Visible = true;
+            //Устанавливаем число страниц в новых книгах
+            app.SheetsInNewWorkbook = 1;
+            //Создаём книгу
+            Excel.Workbook book = app.Workbooks.Add();
+            //Получаем первую страницу книги
+            Excel.Worksheet sheet = book.Worksheets.get_Item(1);
+            //Переименовываем страницу
+            sheet.Name = "Результат";
+            //Выбираем первые 9 столбцов первой строки
+            Excel.Range cells = sheet.get_Range("A1", "I1");
+            //Объединяем ячейки
+            cells.Merge();
+            //Задаем выравнивание по центру
+            cells.HorizontalAlignment = Excel.Constants.xlCenter;
+            //Выводим Заголовок
+            cells.Value2 = "Таблица результатов с умопомрачительным оформлением";
+            //Выбираем первые 9 столбцов второй строки, повторяем действия
+            cells = sheet.get_Range("A2", "I2");
+            cells.Merge();
+            cells.HorizontalAlignment = Excel.Constants.xlCenter;
+            //Устанавливаем цвет в 47 предустановленное значение
+            cells.Font.ColorIndex = 47;
+            //Выводим саркастический подзаголовок
+            cells.Value2 = "(в моих мечтах)";
+            //Выбираем первые 9 столбцов второй строки
+            cells = sheet.get_Range("A3", "I3");
+            //Устанавливаем цвет границ в чёрный цвет
+            cells.Borders.ColorIndex = 1;
+            //Тип - неприрывные
+            cells.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+            //Толщина - широкие
+            cells.Borders.Weight = Excel.XlBorderWeight.xlThick;
+            //Вводим имена столбцов
+            sheet.get_Range("A3").Value2 = "Компания";
+            sheet.get_Range("B3").Value2 = "Модель";
+            sheet.get_Range("C3").Value2 = "Число сделок";
+            sheet.get_Range("D3").Value2 = "Метод оплаты";
+            sheet.get_Range("E3").Value2 = "Тип сделки";
+            sheet.get_Range("F3").Value2 = "Фамилия";
+            sheet.get_Range("G3").Value2 = "Имя";
+            sheet.get_Range("H3").Value2 = "Отчество";
+            sheet.get_Range("I3").Value2 = "Дата рождения";
+
+            //Устанавливаем выделение в первую строку данных
+            cells = sheet.get_Range("A4");
+            //Для каждой строки таблицы
+            foreach (DataRow row in salesData.Tables[0].Rows)
+            {
+                //Выводим данные с учётом смещения
+                cells.get_Offset(0, 0).Value2 = row[0].ToString();
+                cells.get_Offset(0, 1).Value2 = row[1].ToString();
+                cells.get_Offset(0, 2).Value2 = row[2].ToString();
+                cells.get_Offset(0, 3).Value2 = row[3].ToString();
+                cells.get_Offset(0, 4).Value2 = row[4].ToString();
+                cells.get_Offset(0, 5).Value2 = row[5].ToString();
+                cells.get_Offset(0, 6).Value2 = row[6].ToString();
+                cells.get_Offset(0, 7).Value2 = row[7].ToString();
+                cells.get_Offset(0, 8).Value2 = row[8].ToString();
+                //Смещаем выделение на строку ниже
+                cells = cells.get_Offset(1, 0);
+            }
+            //Выделяем заголовок
+            cells = sheet.get_Range("A3", "I3");
+            //Изменяем ширину выделенных столбцов
+            cells.ColumnWidth = 16;
+            //Выделяем все данные, обрамляем тонкой рамкой
+            cells = sheet.get_Range(sheet.get_Range("A4", "I4"), cells.get_Offset(salesData.Tables[0].Rows.Count, 0));
+            cells.Borders.ColorIndex = 1;
+            cells.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+            try
+            {
+                //Вызываем диалог сохранения
+                book.SaveAs();
+            }   //ОСТОРОЖНО!!!
+            //Он любит бросать исключения
+            catch (Exception) { };
+        }
+
+        private void button_export_excel9_Click(object sender, EventArgs e)
+        {
+            ExportExcel(ref dataSetQuery9);
+        }
+
+        static private void ExportExcel(ref DataSet salesData)
+        {
+            //Если не было получено данных, выходим
+            if (salesData.Tables.Count < 1)
+                return;
+            //Создаём экземпляр приложения
+            Excel.Application app = new Excel.Application();
+            //Отображаем его окно
+            app.Visible = true;
+            //Устанавливаем число страниц в новых книгах
+            app.SheetsInNewWorkbook = 1;
+            //Создаём книгу
+            Excel.Workbook book = app.Workbooks.Add();
+            //Получаем первую страницу книги
+            Excel.Worksheet sheet = book.Worksheets.get_Item(1);
+            //Переименовываем страницу
+            sheet.Name = "Результат";
+            //Выбираем первые 9 столбцов первой строки
+            Excel.Range cells = sheet.get_Range("A1", "I1");
+            //Объединяем ячейки
+            cells.Merge();
+            //Задаем выравнивание по центру
+            cells.HorizontalAlignment = Excel.Constants.xlCenter;
+            //Выводим Заголовок
+            cells.Value2 = "Таблица результатов с умопомрачительным оформлением";
+            //Выбираем первые 9 столбцов второй строки, повторяем действия
+            cells = sheet.get_Range("A2", "I2");
+            cells.Merge();
+            cells.HorizontalAlignment = Excel.Constants.xlCenter;
+            //Устанавливаем цвет в 47 предустановленное значение
+            cells.Font.ColorIndex = 47;
+            //Выводим саркастический подзаголовок
+            cells.Value2 = "(в моих мечтах)";
+            //Выбираем первые 9 столбцов второй строки
+            cells = sheet.get_Range("A3", "I3");
+            //Устанавливаем цвет границ в чёрный цвет
+            cells.Borders.ColorIndex = 1;
+            //Тип - неприрывные
+            cells.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+            //Толщина - широкие
+            cells.Borders.Weight = Excel.XlBorderWeight.xlThick;
+            //Вводим имена столбцов
+            sheet.get_Range("A3").Value2 = "Компания";
+            sheet.get_Range("B3").Value2 = "Модель";
+            sheet.get_Range("C3").Value2 = "Число сделок";
+            sheet.get_Range("D3").Value2 = "Метод оплаты";
+            sheet.get_Range("E3").Value2 = "Тип сделки";
+            sheet.get_Range("F3").Value2 = "Фамилия";
+            sheet.get_Range("G3").Value2 = "Имя";
+            sheet.get_Range("H3").Value2 = "Отчество";
+            sheet.get_Range("I3").Value2 = "Дата рождения";
+
+            //Устанавливаем выделение в первую строку данных
+            cells = sheet.get_Range("A4");
+            //Для каждой строки таблицы
+            foreach (DataRow row in salesData.Tables[0].Rows)
+            {
+                //Выводим данные с учётом смещения
+                cells.get_Offset(0, 0).Value2 = row[0].ToString();
+                cells.get_Offset(0, 1).Value2 = row[1].ToString();
+                cells.get_Offset(0, 2).Value2 = row[2].ToString();
+                cells.get_Offset(0, 3).Value2 = row[3].ToString();
+                cells.get_Offset(0, 4).Value2 = row[4].ToString();
+                cells.get_Offset(0, 5).Value2 = row[5].ToString();
+                cells.get_Offset(0, 6).Value2 = row[6].ToString();
+                cells.get_Offset(0, 7).Value2 = row[7].ToString();
+                cells.get_Offset(0, 8).Value2 = row[8].ToString();
+                //Смещаем выделение на строку ниже
+                cells = cells.get_Offset(1, 0);
+            }
+            //Выделяем заголовок
+            cells = sheet.get_Range("A3", "I3");
+            //Изменяем ширину выделенных столбцов
+            cells.ColumnWidth = 16;
+            //Выделяем все данные, обрамляем тонкой рамкой
+            cells = sheet.get_Range(sheet.get_Range("A4", "I4"), cells.get_Offset(salesData.Tables[0].Rows.Count, 0));
+            cells.Borders.ColorIndex = 1;
+            cells.Borders.Weight = Excel.XlBorderWeight.xlThin;
+
+            try
+            {
+                //Вызываем диалог сохранения
+                book.SaveAs();
+            }   //ОСТОРОЖНО!!!
+            //Он любит бросать исключения
+            catch (Exception) { };
+        }
 
     }
 }

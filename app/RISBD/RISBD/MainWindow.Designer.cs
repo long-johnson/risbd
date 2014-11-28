@@ -939,6 +939,7 @@
             this.button_export_word8.TabIndex = 4;
             this.button_export_word8.Text = "Экспорт в Word";
             this.button_export_word8.UseVisualStyleBackColor = true;
+            this.button_export_word8.Click += new System.EventHandler(this.button_export_word8_Click);
             // 
             // tabPage8
             // 
@@ -1064,6 +1065,7 @@
             this.button_export_excel9.TabIndex = 2;
             this.button_export_excel9.Text = "Экспорт в Excel";
             this.button_export_excel9.UseVisualStyleBackColor = true;
+            this.button_export_excel9.Click += new System.EventHandler(this.button_export_excel9_Click);
             // 
             // menuStrip1
             // 
